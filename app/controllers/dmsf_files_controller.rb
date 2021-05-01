@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -158,7 +158,7 @@ class DmsfFilesController < ApplicationController
               Rails.logger.error e.message
               flash[:error] = e.message
               revision.destroy
-              redirect_to :back
+              redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
               return
             end
           end
@@ -178,7 +178,7 @@ class DmsfFilesController < ApplicationController
               recipients = DmsfMailer.deliver_files_updated(@project, [@file])
               if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
                 if recipients.any?
-                  to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
+                  to = recipients.collect{ |r| h(r.name) }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                   to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
                   flash[:warning] = l(:warning_email_notifications, to: to)
                 end
@@ -194,7 +194,7 @@ class DmsfFilesController < ApplicationController
         end
       end
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def delete
@@ -208,7 +208,7 @@ class DmsfFilesController < ApplicationController
             recipients = DmsfMailer.deliver_files_deleted(@project, [@file])
             if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
               if recipients.any?
-                to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
+                to = recipients.collect{ |r| h(r.name) }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                 to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
                 flash[:warning] = l(:warning_email_notifications, to: to)
               end
@@ -268,7 +268,7 @@ class DmsfFilesController < ApplicationController
         flash[:error] = e.message
       end
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def unlock
@@ -286,7 +286,7 @@ class DmsfFilesController < ApplicationController
         flash[:error] = l(:error_only_user_that_locked_file_can_unlock_it)
       end
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def notify_activate
@@ -296,7 +296,7 @@ class DmsfFilesController < ApplicationController
       @file.notify_activate
       flash[:notice] = l(:notice_file_notifications_activated)
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def notify_deactivate
@@ -306,7 +306,7 @@ class DmsfFilesController < ApplicationController
       @file.notify_deactivate
       flash[:notice] = l(:notice_file_notifications_deactivated)
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def restore
@@ -315,7 +315,7 @@ class DmsfFilesController < ApplicationController
     else
       flash[:error] = @file.errors.full_messages.to_sentence
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def thumbnail

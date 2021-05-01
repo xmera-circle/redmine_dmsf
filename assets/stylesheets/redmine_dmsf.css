@@ -2,7 +2,7 @@
 * Redmine plugin for Document Management System "Features"
 *
 * Copyright © 2011    Vit Jonas <vit.jonas@gmail.com>
-* Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+* Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -137,7 +137,7 @@ div[id*="revision_access_"] {
 }
 
 /* Command icons */
-.icon-link { background-image: url(../../../images/link.png); }
+.dmsf-icon-link { background-image: url(../../../images/link.png); }
 .icon-approvalworkflows { background-image: url(../../../images/ticket_go.png); }
 
 /* File types */
@@ -150,7 +150,7 @@ div[id*="revision_access_"] {
 .dmsf-system .icon-folder { background-image: url(../images/folder_system.png); }
 
 .icon-file.filetype-doc, .icon-file.filetype-docx { background-image: url(../images/filetypes/doc.png); }
-.icon-file.filetype-xls, .icon-file.filetype-xlsx { background-image: url(../images/filetypes/xls.png); }
+.icon-file.filetype-xls, .icon-file.filetype-xlsx, .icon-file.filetype-xlsm { background-image: url(../images/filetypes/xls.png); }
 .icon-file.filetype-ppt, .icon-file.filetype-pptx { background-image: url(../images/filetypes/ppt.png); }
 .icon-file.filetype-vsd, .icon-file.filetype-vsdx { background-image: url(../images/filetypes/vsd.png); }
 .icon-file.filetype-mpp { background-image: url(../images/filetypes/mpp.png); }
@@ -164,6 +164,7 @@ div[id*="revision_access_"] {
 .dmsf-gray .icon-file.filetype-docx { background-image: url(../images/filetypes/doc_gray.png); }
 .dmsf-gray .icon-file.filetype-xls { background-image: url(../images/filetypes/xls_gray.png); }
 .dmsf-gray .icon-file.filetype-xlsx { background-image: url(../images/filetypes/xls_gray.png); }
+.dmsf-gray .icon-file.filetype-xlsm { background-image: url(../images/filetypes/xls_gray.png); }
 .dmsf-gray .icon-file.filetype-ppt { background-image: url(../images/filetypes/ppt_gray.png); }
 .dmsf-gray .icon-file.filetype-pptx { background-image: url(../images/filetypes/ppt_gray.png); }
 .dmsf-gray .icon-file.filetype-vsd { background-image: url(../images/filetypes/vsd_gray.png); }
@@ -200,7 +201,6 @@ div[id*="revision_access_"] {
 
 .dmsf-gray a, .dmsf-gray a:link, .dmsf-gray a:visited {
     color: #484848;
-    text-decoration: none;
 }
 
 /* System folders */
@@ -208,23 +208,18 @@ div[id*="revision_access_"] {
     color: #5C82AD
 }
 
-.dmsf-system a, .dmsf-gray a:link, .dmsf-gray a:visited {
-    color: #484848;
-    text-decoration: none;
-}
-
 /* Search results */
 .icon-dmsf-file { background-image: url(../../../images/document.png); }
 
 /* DMSF tree view */
 .dmsf-hidden { display:none; }
-.dmsf-tree:not(.dmsf-child) span.dmsf_expander { cursor: pointer; }
-.dmsf-tree.dmsf-expanded td.dmsf-title span {
+.dmsf-tree:not(.dmsf-child) span.dmsf-expander { cursor: pointer; }
+.dmsf-tree.dmsf-expanded span.dmsf-expander {
     background: url(../../../images/arrow_down.png) no-repeat 0 50%;
     padding-left: 16px;
 }
-.dmsf-tree.dmsf-child .dmsf-title span { padding-left: 16px; }
-.dmsf-tree.dmsf-collapsed .dmsf-title span {
+.dmsf-tree.dmsf-child span.dmsf-expander { padding-left: 16px; }
+.dmsf-tree.dmsf-collapsed span.dmsf-expander {
     background: url(../../../images/arrow_right.png) no-repeat 0 50%;
     padding-left: 16px;
 }
@@ -325,6 +320,31 @@ div[id*="revision_access_"] {
 
 .dmfs-box-tabular {
     padding-top: 10px
+}
+
+a.dmsf-scroll-down {
+    background: url(../../../images/arrow_down.png) no-repeat 5px 50%;
+    background-color: #759FCF;
+    text-decoration: none;
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 0.8em;
+    float: right;
+    padding: 2px 9px 3px 20px;
+    margin-right: 20px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+div.dmsf-sticky {
+    position: fixed;
+    right: 10px;
+    top: 0;
+    z-index: 10000;
+}
+
+div.dmsf-scroll {
+    width: 100%;
 }
 
 /* New link form */

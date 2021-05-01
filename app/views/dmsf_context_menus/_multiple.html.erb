@@ -3,7 +3,7 @@
   #
   # Redmine plugin for Document Management System "Features"
   #
-  # Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+  # Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
   #
   # This program is free software; you can redistribute it and/or
   # modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
 
 <li>
   <%= context_menu_link l(:button_download), entries_operations_dmsf_path(id: project, folder_id: folder,
-    ids: params[:ids], download_entries: true), method: :post, class: 'icon icon-download', disabled: false %>
+    ids: params[:ids], download_entries: true), method: :post, class: 'icon icon-download', disabled: project.nil? %>
 </li>
 <li>
   <%= context_menu_link l(:field_mail), entries_operations_dmsf_path(id: project, folder_id: folder,

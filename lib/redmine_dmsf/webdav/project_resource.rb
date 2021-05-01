@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ module RedmineDmsf
           @children = []
           if project
             # Sub-projects
-            load_projects project.children
+            load_projects(project.children) if Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders']
             if project.module_enabled?(:dmsf)
               # Folders
               if User.current.allowed_to?(:view_dmsf_folders, project)
@@ -127,4 +127,5 @@ module RedmineDmsf
 
     end
   end
+
 end

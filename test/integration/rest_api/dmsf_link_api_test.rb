@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ require File.expand_path('../../../test_helper', __FILE__)
 class DmsfLinkApiTest < RedmineDmsf::Test::IntegrationTest
   include Redmine::I18n
 
-  fixtures :dmsf_files, :dmsf_file_revisions
+  fixtures :dmsf_files, :dmsf_file_revisions, :dmsf_links
 
   def setup
     super

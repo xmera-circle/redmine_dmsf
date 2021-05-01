@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,15 +24,18 @@
 class DmsfController < ApplicationController
   include RedmineDmsf::DmsfZip
 
-  before_action :find_project
-  before_action :authorize, except: [:expand_folder]
+  before_action :find_project, except: [:expand_folder, :index]
+  before_action :authorize, except: [:expand_folder, :index]
+  before_action :authorize_global, only: [:index]
   before_action :find_folder, except: [:new, :create, :edit_root, :save_root, :add_email, :append_email,
                                           :autocomplete_for_user]
   before_action :find_parent, only: [:new, :create, :delete]
   before_action :permissions
   # Also try to lookup folder by title if this is an API call
   before_action :find_folder_by_title, only: [:show]
-  before_action :get_query, only: [:expand_folder, :show, :trash]
+  before_action :get_query, only: [:expand_folder, :show, :trash, :empty_trash, :index]
+  before_action :get_project_roles, only: [:new, :edit, :create, :save]
+  before_action :text_formating, only: [:show, :edit, :edit_root]
 
   accept_api_auth :show, :create, :save, :delete
 
@@ -50,11 +53,20 @@ class DmsfController < ApplicationController
 
   def expand_folder
     @idnt = params[:idnt].present? ? params[:idnt].to_i + 1 : 0
-    @query.dmsf_folder_id = @folder.id
+    if params[:project_id].present?
+      @query.project = Project.find_by(id: params[:project_id])
+    end
+    @query.dmsf_folder_id = @folder&.id
     @query.deleted = false
+    @query.sub_projects = true
     respond_to do |format|
       format.js { render action: 'query_rows' }
     end
+  end
+
+  def index
+    @query.sub_projects = true
+    show
   end
 
   def show
@@ -65,6 +77,7 @@ class DmsfController < ApplicationController
     @trash_enabled = @folder_manipulation_allowed && @file_manipulation_allowed
     @query.dmsf_folder_id = @folder ? @folder.id : nil
     @query.deleted = false
+    @query.sub_projects |= (Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'] == '1')
     if (@folder && @folder.deleted?) || (params[:folder_title].present? && !@folder)
       render_404
       return
@@ -143,7 +156,7 @@ class DmsfController < ApplicationController
       selected_dir_links.blank? && selected_file_links.blank? &&
       selected_url_links.blank?
       flash[:warning] = l(:warning_no_entries_selected)
-      redirect_to :back
+      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
       return
     end
 
@@ -162,13 +175,13 @@ class DmsfController < ApplicationController
         email_entries(selected_folders, selected_files)
       elsif params[:restore_entries].present?
         restore_entries(selected_folders, selected_files, selected_dir_links, selected_file_links, selected_url_links)
-        redirect_to :back
+        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
       elsif params[:delete_entries].present?
         delete_entries(selected_folders, selected_files, selected_dir_links, selected_file_links, selected_url_links, false)
-        redirect_to :back
+        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
       elsif params[:destroy_entries].present?
         delete_entries(selected_folders, selected_files, selected_dir_links, selected_file_links, selected_url_links, true)
-        redirect_to :back
+        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
       else
         download_entries(selected_folders, selected_files)
       end
@@ -179,7 +192,7 @@ class DmsfController < ApplicationController
     rescue StandardError => e
       flash[:error] = e.message
       Rails.logger.error e.message
-      return redirect_back(fallback_location: dmsf_folder_path(id: @project, folder_id: @folder))
+      return redirect_back_or_default(dmsf_folder_path(id: @project, folder_id: @folder))
     end
   end
 
@@ -190,7 +203,7 @@ class DmsfController < ApplicationController
         return redirect_to dmsf_folder_path id: @project, folder_id: @folder, custom_field_id: key, custom_value: value
       end
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def entries_email
@@ -262,8 +275,10 @@ class DmsfController < ApplicationController
       format.html {
         if saved
           flash[:notice] = l(:notice_folder_details_were_saved)
-          redirect_to_folder_id = params[:dmsf_folder][:redirect_to_folder_id]
-          redirect_to_folder_id = @folder.dmsf_folder.id if(@folder.dmsf_folder && redirect_to_folder_id.blank?)
+          if @folder.project == @project
+            redirect_to_folder_id = params[:dmsf_folder][:redirect_to_folder_id]
+            redirect_to_folder_id = @folder.dmsf_folder.id if(@folder.dmsf_folder && redirect_to_folder_id.blank?)
+          end
           redirect_to dmsf_folder_path(id: @project, folder_id: redirect_to_folder_id)
         else
           render action: 'edit'
@@ -283,7 +298,7 @@ class DmsfController < ApplicationController
     respond_to do |format|
       format.html do
         if commit
-          redirect_to :back
+          redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
         else
           redirect_to dmsf_folder_path(id: @project, folder_id: @parent)
         end
@@ -298,10 +313,7 @@ class DmsfController < ApplicationController
     else
       flash[:error] = @folder.errors.full_messages.to_sentence
     end
-    redirect_back fallback_location: trash_dmsf_path(@project)
-  end
-
-  def edit_root
+    redirect_back_or_default trash_dmsf_path(@project)
   end
 
   def save_root
@@ -328,7 +340,7 @@ class DmsfController < ApplicationController
       end
       flash[:notice] = l(:notice_folder_notifications_activated)
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def notify_deactivate
@@ -343,7 +355,7 @@ class DmsfController < ApplicationController
       end
       flash[:notice] = l(:notice_folder_notifications_deactivated)
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def lock
@@ -355,7 +367,7 @@ class DmsfController < ApplicationController
       @folder.lock!
       flash[:notice] = l(:notice_folder_locked)
     end
-      redirect_to :back
+      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def unlock
@@ -371,7 +383,7 @@ class DmsfController < ApplicationController
         flash[:error] = l(:error_only_user_that_locked_folder_can_unlock_it)
       end
     end
-     redirect_to :back
+     redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def add_email
@@ -398,7 +410,7 @@ class DmsfController < ApplicationController
       if params[:dmsf_folder][:drag_id] =~ /(.+)-(\d+)/
         type = $1
         id = $2
-        if params[:dmsf_folder][:drop_id] =~ /^folder.*-(\d+)/
+        if params[:dmsf_folder][:drop_id] =~ /^(\d+)(p|f)span$/
           case type
           when 'file'
             object = DmsfFile.find_by(id: id)
@@ -407,14 +419,25 @@ class DmsfController < ApplicationController
           when 'file-link', 'folder-link', 'url-link'
             object = DmsfLink.find_by(id: id)
           end
-          dmsf_folder = DmsfFolder.find_by(id: $1)
-          if object && dmsf_folder
-            if dmsf_folder == object.dmsf_folder
-              object.errors[:base] << l(:error_target_folder_same)
-            elsif object.dmsf_folder&.locked_for_user?
-              object.errors[:base] << l(:error_folder_is_locked)
-            else
-              result = object.move_to(dmsf_folder.project, dmsf_folder)
+          if object
+            case $2
+            when 'p'
+              project = Project.find_by(id: $1)
+              if project && User.current.allowed_to?(:file_manipulation, project) &&
+                User.current.allowed_to?(:folder_manipulation, project)
+                result = object.move_to(project, nil)
+              end
+            when 'f'
+              dmsf_folder = DmsfFolder.find_by(id: $1)
+              if dmsf_folder
+                if dmsf_folder == object.dmsf_folder
+                  object.errors.add(:base, l(:error_target_folder_same))
+                elsif object.dmsf_folder&.locked_for_user?
+                  object.errors.add(:base, l(:error_folder_is_locked))
+                else
+                  result = object.move_to(dmsf_folder.project, dmsf_folder)
+                end
+              end
             end
           end
         end
@@ -433,6 +456,24 @@ class DmsfController < ApplicationController
         }
       end
     end
+  end
+
+  def empty_trash
+    @query.deleted = true
+    @query.dmsf_nodes.each do |node|
+      case node.type
+      when 'folder'
+        folder = DmsfFolder.find_by(id: node.id)
+        folder&.delete true
+      when 'file'
+        file = DmsfFile.find_by(id: node.id)
+        file&.delete true
+      when /link$/
+        link = DmsfLink.find_by(id: node.id)
+        link&.delete true
+      end
+    end
+    redirect_back_or_default trash_dmsf_path(id: @project.id)
   end
 
   private
@@ -595,7 +636,7 @@ class DmsfController < ApplicationController
         recipients = DmsfMailer.deliver_files_deleted(@project, deleted_files)
         if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
           if recipients.any?
-            to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
+            to = recipients.collect{ |r| h(r.name) }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
             to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
             flash[:warning] = l(:warning_email_notifications, to: to)
           end
@@ -605,7 +646,7 @@ class DmsfController < ApplicationController
       end
     end
     unless not_deleted_files.empty?
-      flash[:warning] = l(:warning_some_entries_were_not_deleted, entries: not_deleted_files.map{ |f| f.title }.
+      flash[:warning] = l(:warning_some_entries_were_not_deleted, entries: not_deleted_files.map{ |f| h(f.title) }.
           join(', '))
     end
     # Links
@@ -655,6 +696,15 @@ class DmsfController < ApplicationController
     else
       @query = retrieve_query(DmsfQuery, true)
     end
+  end
+
+  def get_project_roles
+    @project_roles = Role.givable.joins(:member_roles).joins(:members).where(
+      members: { project_id: @project.id }).distinct
+  end
+
+  def text_formating
+    @wiki = Setting.text_formatting != 'HTML'
   end
 
 end

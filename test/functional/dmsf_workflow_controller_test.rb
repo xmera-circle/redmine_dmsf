@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -39,7 +39,7 @@ class DmsfWorkflowsControllerTest < RedmineDmsf::Test::TestCase
     @wfsa2 = DmsfWorkflowStepAssignment.find 2
     @revision1 = DmsfFileRevision.find 1
     @revision2 = DmsfFileRevision.find 2
-    @request.env['HTTP_REFERER'] = dmsf_folder_path(id: @project1.id)
+    @request.env['HTTP_REFERER'] = dmsf_folder_path(id: @project1)
     @request.session[:user_id] = @jsmith.id
   end
 

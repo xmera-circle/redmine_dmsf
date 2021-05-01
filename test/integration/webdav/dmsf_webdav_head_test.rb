@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -36,11 +36,14 @@ class DmsfWebdavHeadTest < RedmineDmsf::Test::IntegrationTest
     head "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: @admin
     assert_response :success
     check_headers_exist
-    Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = '1'
-    head "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: @admin
-    assert_response :not_found
-    head "/dmsf/webdav/#{@project1_uri}", params: nil, headers: @admin
-    assert_response :success
+    with_settings plugin_redmine_dmsf: {'dmsf_webdav_use_project_names' => '1', 'dmsf_webdav' => '1'} do
+      head "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: @admin
+      assert_response :not_found
+      project1_name = RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1)
+      project1_uri = Addressable::URI.escape(project1_name)
+      head "/dmsf/webdav/#{project1_uri}", params: nil, headers: @admin
+      assert_response :success
+    end
   end
 
   # Note:
@@ -52,11 +55,14 @@ class DmsfWebdavHeadTest < RedmineDmsf::Test::IntegrationTest
     head "/dmsf/webdav/#{@project1.identifier}/test.txt", params: nil, headers: @admin
     assert_response :success
     check_headers_exist
-    Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = '1'
-    head "/dmsf/webdav/#{@project1.identifier}/test.txt", params: nil, headers: @admin
-    assert_response :not_found
-    head "/dmsf/webdav/#{@project1_uri}/test.txt", params: nil, headers: @admin
-    assert_response :success
+    with_settings plugin_redmine_dmsf: {'dmsf_webdav_use_project_names' => '1', 'dmsf_webdav' => '1'} do
+      head "/dmsf/webdav/#{@project1.identifier}/test.txt", params: nil, headers: @admin
+      assert_response :conflict
+      project1_name = RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1)
+      project1_uri = Addressable::URI.escape(project1_name)
+      head "/dmsf/webdav/#{project1_uri}/test.txt", params: nil, headers: @admin
+      assert_response :success
+    end
   end
 
   def test_head_responds_to_file_anonymous_other_user_agent

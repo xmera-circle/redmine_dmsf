@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@
       <%= label_tag 'email[to]', l(:label_email_to) %>
       <span>
         <%= text_field_tag 'email[to]', @email_params[:to], class: 'dmsf-full-width', required: true %>
-        <%= link_to l(:button_add), add_email_dmsf_path(project_id: @project),
+        <%= link_to l(:button_add), add_email_dmsf_path(id: @project),
           title: l(:label_email_address_add), class: 'icon icon-add', remote: true %>
       </span>
     </p>

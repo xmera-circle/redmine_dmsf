@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -32,13 +32,18 @@ def dmsf_init
     menu.push :dmsf_approvalworkflows, :dmsf_workflows_path, caption: :label_dmsf_workflow_plural,
               html: { class: 'icon icon-workflows' }, if: Proc.new { |_| User.current.admin? }
   end
-
+  # Project menu extension
   Redmine::MenuManager.map :project_menu do |menu|
     menu.push :dmsf, { controller: 'dmsf', action: 'show' }, caption: :menu_dmsf, before: :documents,
               param: :id
   end
+  # Main menu extension
+  Redmine::MenuManager.map :top_menu do |menu|
+    menu.push :dmsf, { controller: 'dmsf', action: 'index' }, caption: :menu_dmsf,
+              html: { class: 'icon-dmsf' },
+              if: Proc.new { User.current.allowed_to?(:view_dmsf_folders, nil, global: true) }
+  end
 
-  # Permissions
   Redmine::AccessControl.map do |map|
     map.project_module :dmsf do |pmap|
       pmap.permission :view_dmsf_file_revision_accesses,
@@ -46,16 +51,17 @@ def dmsf_init
       pmap.permission :view_dmsf_file_revisions,
                       read: true
       pmap.permission :view_dmsf_folders,
-                      { dmsf: [:show] },
+                      { dmsf: [:show, :index] },
                       read: true
       pmap.permission :user_preferences,
-                      { dmsf_state: [:user_pref_save] }
+                      { dmsf_state: [:user_pref_save] },
+                       require: :member
       pmap.permission :view_dmsf_files,
                       { dmsf: [:entries_operation, :entries_email, :download_email_entries, :tag_changed, :add_email,
                                  :append_email, :autocomplete_for_user],
                        dmsf_files: [:show, :view, :thumbnail],
                        dmsf_workflows: [:log] },
-                      read: true
+                       read: true
       pmap.permission :email_documents,
                       { dmsf_public_urls: [:create] }
       pmap.permission :folder_manipulation,
@@ -74,7 +80,7 @@ def dmsf_init
                        dmsf_files_copy: [:new, :copy, :move],
                        dmsf_context_menus: [:dmsf]}
       pmap.permission :file_delete,
-                      { dmsf: [:trash, :delete_entries],
+                      { dmsf: [:trash, :delete_entries, :empty_trash],
                        dmsf_files: [:delete],
                        dmsf_trash_context_menus: [:trash] }
       pmap.permission :force_file_unlock, {}

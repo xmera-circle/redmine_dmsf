@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -63,11 +63,13 @@ class DmsfContextMenusControllerTest < RedmineDmsf::Test::TestCase
     User.current = @jsmith
     @file1.lock!
     User.current = nil
-    get :dmsf, params: { id: @file1.project.id, ids: ["file-#{@file1.id}"] }
-    assert_select 'a.icon-unlock', text: l(:button_unlock)
-    assert_select 'a.icon-unlock.disabled', text: l(:button_edit_content), count: 0
-    assert_select 'a.icon-file', text: l(:button_edit_content)
-    assert_select 'a.icon-file.disabled', text: l(:button_edit_content), count: 0
+    with_settings plugin_redmine_dmsf: { 'dmsf_webdav' => '1', 'dmsf_webdav_strategy' => 'WEBDAV_READ_WRITE' } do
+      get :dmsf, params: { id: @file1.project.id, ids: ["file-#{@file1.id}"] }
+      assert_select 'a.icon-unlock', text: l(:button_unlock)
+      assert_select 'a.icon-unlock.disabled', text: l(:button_edit_content), count: 0
+      assert_select 'a.icon-file', text: l(:button_edit_content)
+      assert_select 'a.icon-file.disabled', text: l(:button_edit_content), count: 0
+    end
   end
 
   def test_dmsf_file_locked_force_unlock_permission_off
@@ -138,6 +140,28 @@ class DmsfContextMenusControllerTest < RedmineDmsf::Test::TestCase
     assert_select 'a.icon-del', text: l(:button_delete)
   end
 
+  def test_dmsf_file_edit_content
+    get :dmsf, params: { id: @file1.project.id, ids: ["file-#{@file1.id}"] }
+    assert_response :success
+    assert_select 'a.dmsf-icon-file', text: l(:button_edit_content)
+  end
+
+  def test_dmsf_file_edit_content_webdav_disabled
+    with_settings plugin_redmine_dmsf: { 'dmsf_webdav' => nil } do
+      get :dmsf, params: { id: @file1.project.id, ids: ["file-#{@file1.id}"] }
+      assert_response :success
+      assert_select 'a:not(dmsf-icon-file)'
+    end
+  end
+
+  def test_dmsf_file_edit_content_webdav_readonly
+    with_settings plugin_redmine_dmsf: { 'dmsf_webdav' => '1', 'dmsf_webdav_strategy' => 'WEBDAV_READ_ONLY' } do
+      get :dmsf, params: { id: @file1.project.id, ids: ["file-#{@file1.id}"] }
+      assert_response :success
+      assert_select 'a.dmsf-icon-file.disabled', text: l(:button_edit_content)
+    end
+  end
+
   def test_dmsf_file_link
     get :dmsf, params: {
         id: @file_link6.project.id, folder_id: @file_link6.dmsf_folder, ids: ["file-link-#{@file_link6.id}"] }
@@ -160,7 +184,7 @@ class DmsfContextMenusControllerTest < RedmineDmsf::Test::TestCase
     assert_select 'a.icon-unlock', text: l(:button_unlock)
     assert_select 'a.icon-lock', text: l(:button_lock), count: 0
     assert_select 'a.icon-email-add.disabled', text: l(:label_notifications_on)
-    assert_select 'a.icon-del.disabled', text: l(:button_delete)
+    assert_select 'a.icon-del', text: l(:button_delete)
   end
 
   def test_dmsf_url_link

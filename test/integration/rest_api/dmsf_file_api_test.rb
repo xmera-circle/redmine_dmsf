@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -88,6 +88,11 @@ class DmsfFileApiTest < RedmineDmsf::Test::IntegrationTest
     #       <dmsf_workflow_started_by_user_id>1</dmsf_workflow_started_by_user_id>
     #       <dmsf_workflow_started_at/>
     #       <digest>81dc9bdb52d04dc20036dbd8313ed055</digest>
+    #       <custom_fields>
+    #         <custom_field>
+    #           ...
+    #         <suctom_field>
+    #       </custom_fields>
     #     </dmsf_file_revision>
     #   </dmsf_file_revisions>
     # </dmsf_file>
@@ -97,6 +102,7 @@ class DmsfFileApiTest < RedmineDmsf::Test::IntegrationTest
     assert_select 'dmsf_file > project_id', text: @file1.project_id.to_s
     assert_select 'dmsf_file > content_url', text: "http://www.example.com/dmsf/files/#{@file1.id}/download"
     assert_select 'dmsf_file > dmsf_file_revisions > dmsf_file_revision', @file1.dmsf_file_revisions.all.size
+    assert_select 'dmsf_file > dmsf_file_revisions > dmsf_file_revision > custom_fields > custom_field'
     #curl -v -H "Content-Type: application/octet-stream" -X GET -u ${1}:${2} http://localhost:3000/dmsf/files/41532/download > file.txt
     get "/dmsf/files/#{@file1.id}/download.xml?key=#{@token.value}"
     assert_response :success

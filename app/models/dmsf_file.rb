@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -110,6 +110,14 @@ class DmsfFile < ActiveRecord::Base
     visible.find_by project_id: project_id, dmsf_folder_id: folder&.id, name: name
   end
 
+  def approval_allowed_zero_minor
+    if Setting.plugin_redmine_dmsf['only_approval_zero_minor_version'] 
+      return last_revision.minor_version == 0
+    else
+      return true
+    end
+  end
+
   def last_revision
     unless defined?(@last_revision)
       @last_revision = deleted? ? dmsf_file_revisions.first : dmsf_file_revisions.visible.first
@@ -139,9 +147,9 @@ class DmsfFile < ActiveRecord::Base
     if locked_for_user? && (!User.current.allowed_to?(:force_file_unlock, project))
       Rails.logger.info l(:error_file_is_locked)
       if lock.reverse[0].user
-        errors[:base] << l(:title_locked_by_user, user: lock.reverse[0].user)
+        errors.add(:base, l(:title_locked_by_user, user: lock.reverse[0].user))
       else
-        errors[:base] << l(:error_file_is_locked)
+        errors.add(:base, l(:error_file_is_locked))
       end
       return false
     end
@@ -157,14 +165,14 @@ class DmsfFile < ActiveRecord::Base
       end
     rescue => e
       Rails.logger.error e.message
-      errors[:base] << e.message
+      errors.add(:base, e.message)
       return false
     end
   end
 
   def restore
     if dmsf_folder_id && (dmsf_folder.nil? || dmsf_folder.deleted?)
-      errors[:base] << l(:error_parent_folder)
+      errors.add(:base, l(:error_parent_folder))
       return false
     end
     dmsf_file_revisions.each { |r| r.restore }
@@ -236,12 +244,12 @@ class DmsfFile < ActiveRecord::Base
 
   def move_to(project, folder)
     if locked_for_user?
-      errors[:base] << l(:error_file_is_locked)
+      errors.add(:base, l(:error_file_is_locked))
       Rails.logger.error l(:error_file_is_locked)
       return false
     end
     unless last_revision
-      errors[:base] << l(:error_at_least_one_revision_must_be_present)
+      errors.add(:base, l(:error_at_least_one_revision_must_be_present))
       Rails.logger.error l(:error_at_least_one_revision_must_be_present)
       return false
     end
@@ -273,6 +281,15 @@ class DmsfFile < ActiveRecord::Base
     file = DmsfFile.new
     file.dmsf_folder_id = folder.id if folder
     file.project_id = project.id
+    if DmsfFile.where(project_id: file.project_id, dmsf_folder_id: file.dmsf_folder_id, name: filename).exists?
+      1.step do |i|
+        gen_filename = " #{filename} #{l(:dmsf_copy, n: i)}"
+        unless DmsfFile.where(project_id: file.project_id, dmsf_folder_id: file.dmsf_folder_id, name: gen_filename).exists?
+          filename = gen_filename
+          break
+        end
+      end
+    end
     file.name = filename
     file.notification = Setting.plugin_redmine_dmsf['dmsf_default_notifications'].present?
     if file.save && last_revision
@@ -288,13 +305,13 @@ class DmsfFile < ActiveRecord::Base
       new_revision.dmsf_workflow_started_at = nil
       wf = last_revision.dmsf_workflow
       if wf && (wf.project.nil? || (wf.project.id == project.id))
-        new_revision.set_workflow(wf.id, nil)
-        new_revision.assign_workflow(wf.id)
+        new_revision.set_workflow wf.id, nil
+        new_revision.assign_workflow wf.id
       end
       if File.exist? last_revision.disk_file
         FileUtils.cp last_revision.disk_file, new_revision.disk_file(false)
       end
-      new_revision.comment = l(:comment_copied_from, source: "#{project.identifier}: #{dmsf_path_str}")
+      new_revision.comment = l(:comment_copied_from, source: "#{self.project.identifier}: #{dmsf_path_str}")
       new_revision.custom_values = []
       last_revision.custom_values.each do |cv|
         v = CustomValue.new
@@ -305,7 +322,7 @@ class DmsfFile < ActiveRecord::Base
       if new_revision.save
         file.set_last_revision new_revision
       else
-        errors[:base] << new_revision.errors.full_messages.to_sentence
+        errors.add(:base, new_revision.errors.full_messages.to_sentence)
         Rails.logger.error new_revision.errors.full_messages.to_sentence
         file.delete(true)
         file = nil
@@ -464,8 +481,12 @@ class DmsfFile < ActiveRecord::Base
     last_revision && Redmine::MimeType.is_type?('video', last_revision.disk_filename)
   end
 
+  def html?
+    last_revision && (Redmine::MimeType.of(last_revision.disk_filename) == 'text/html')
+  end
+
   def disposition
-    (image? || pdf? || video?) ? 'inline' : 'attachment'
+    (image? || pdf? || video? || html?) ? 'inline' : 'attachment'
   end
 
   def preview(limit)

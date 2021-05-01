@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -36,9 +36,6 @@ module RedmineDmsf
         @someone = credentials('someone', 'foo')
         @anonymous = credentials('')
         @project1 = Project.find 1
-        Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = '1'
-        @project1_name = RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1)
-        @project1_uri = Addressable::URI.escape(@project1_name)
         @project2 = Project.find 2
         @project3 = Project.find 3
         [@project1, @project2, @project3].each do |project|
@@ -55,6 +52,7 @@ module RedmineDmsf
         @folder6 = DmsfFolder.find 6
         @folder7 = DmsfFolder.find 7
         @folder10 = DmsfFolder.find 10
+        @folder_link1 = DmsfLink.find 1
         @role = Role.find_by(name: 'Manager')
         @role.add_permission! :view_dmsf_folders
         @role.add_permission! :folder_manipulation
@@ -64,6 +62,7 @@ module RedmineDmsf
         Setting.plugin_redmine_dmsf['dmsf_webdav'] = '1'
         Setting.plugin_redmine_dmsf['dmsf_webdav_strategy'] = 'WEBDAV_READ_WRITE'
         Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = nil
+        Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'] = nil
         Setting.plugin_redmine_dmsf['dmsf_storage_directory'] = File.join(%w(files dmsf))
         FileUtils.cp_r File.join(File.expand_path('../fixtures/files', __FILE__), '.'), DmsfFile.storage_path
         User.current = nil
@@ -74,7 +73,7 @@ module RedmineDmsf
         begin
           FileUtils.rm_rf DmsfFile.storage_path
         rescue => e
-          error e.message
+          Rails.logger.error e.message
         end
       end
 

@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -48,6 +48,7 @@ module RedmineDmsf
         @project1 = Project.find 1
         @folder1 = DmsfFolder.find 1
         Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = nil
+        Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'] = nil
       end
     end
   end

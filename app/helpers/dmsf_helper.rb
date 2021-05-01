@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -86,8 +86,8 @@ module DmsfHelper
     if project
       url << ERB::Util.url_encode(RedmineDmsf::Webdav::ProjectResource.create_project_name(project))
       if folder
-        folders = [folder]
-        while folder.dmsf_folder do
+        folders = [ ]
+        while folder do
           folders << folder
           folder = folder.dmsf_folder
         end

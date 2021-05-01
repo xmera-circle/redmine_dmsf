@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -46,9 +46,10 @@ class DmsfWebdavCustomMiddlewareTest < RedmineDmsf::Test::IntegrationTest
   end
 
   def test_webdav_not_enabled
-    Setting.plugin_redmine_dmsf['dmsf_webdav'] = nil
-    process :options, '/dmsf/webdav'
-    assert_response :not_found
+    with_settings plugin_redmine_dmsf: {'dmsf_webdav' => nil} do
+      process :options, '/dmsf/webdav'
+      assert_response :not_found
+    end
   end
 
   def test_webdav_enabled

@@ -4,7 +4,7 @@
 #
 # Copyright © 2011    Terrence Miller
 # Copyright © 2013    Christian Wetting <christian.wetting@kontron.com>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -161,14 +161,10 @@ de:
   permission_email_documents: E-Mailversand von Dokumenten
   label_file: Datei
   field_folder: Ordner
-  error_file_commit_require_uploaded_file: Die Übertragung erfordet eine hochgeladene Datei
-
-  warning_some_files_were_not_commited: "Einige Dateien wurden wegen Validierungsfehlern nicht übertragen: %{files}"
-
+  error_file_commit_require_uploaded_file: Das Hinzufügen erfordet eine hochgeladene Datei
+  warning_some_files_were_not_commited: "Einige Dateien wurden wegen Validierungsfehlern nicht hinzugefügt: %{files}"
   error_user_has_not_right_delete_folder: Der Nutzer hat kein Recht den Ordner zu löschen.
-
   error_user_has_not_right_delete_file: Der Nutzer hat kein Recht die Datei zu löschen.
-
   notice_entries_deleted: Einträge löschen
   warning_some_entries_were_not_deleted: "Einige Einträge wurden nicht gelöscht: %{entries}"
   title_delete_checked: Löschen ausgewählt
@@ -211,7 +207,8 @@ de:
   parent_directory: übergeordnetes Verzeichnis
   note_webdav: "Nach der Aktivierung von WebDav kann der Dienst über die URL
     %{protocol}://%{domain}/dmsf/webdav/[project identifier] erreicht werden."
-  label_dmsf_plural: "Kopieren von Dateien und Ordnern (%{files} Dateien in %{folders} Ordnern)"
+  label_copy_dmsf: "Kopieren von Dateien und Ordnern (%{files} Dateien in %{folders} Ordnern)"
+  label_copy_only_dmsf_folders: "Kopieren nur von Ordnern (%{folders})"
 
   warning_folder_already_locked: Dieser Ordner ist bereits gesperrt
   notice_folder_locked: Der Ordner wurde erfolgreich gesperrt
@@ -368,8 +365,8 @@ de:
 
   label_last_approver: Letzter Genehmiger
 
-  label_act_as_attachable: Dokumente als Anhang
-  note_dmsf_act_as_attachable: Erlaubt Dokumente als Anhang bei Objekten wie bspw. Tickets
+  label_act_as_attachable: Act as attachable
+  note_dmsf_act_as_attachable: Erlaubt das Hinzufügen von Dokumenten zu anderen Objekten (z.B. Tickets)
 
   label_user_search_add: Benutzer suchen
 
@@ -407,8 +404,21 @@ de:
 
   label_add_width: Zugeben mit
 
-  dmsf_webdav_ignore_1b_file_for_authentication: Ignoriere 1b Dateien, die zur Authentifizierung gesendet werden
-  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV Plugin
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignoriere 1b Datei für Authorisierung
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
+
+  text_not_empty: Der Ordner ist nich leer.
+  label_scroll_down: Runterscrollen
+  note_webdav_disabled: WebDAV is disabled. Contact the administrator.
+
+  dmsf_copy: "Kopie (%{n})"
+  label_empty_trash_bin: Empty Trash
+  label_dmsf_projects_as_subfolders: Sub-projects as sub-folders
+  note_dmsf_projects_as_subfolders: Add sub-projects as sub-folders into DMS view
+  only_approval_zero_minor_version: Only approval zero minor version
+  title_assignment_minor: Assignment not allowed, minor must be zero
+  title_start_minor: Start not allowed, minor must be zero
+  title_approval_minor: Approval not allowed, minor must be zero
 
   easy_pages:
     modules:

@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ class DmsfFoldersCopyController < ApplicationController
       redirect_to dmsf_folder_path(id: @target_project, folder_id: new_folder)
     else
       flash[:error] = new_folder.errors.full_messages.to_sentence
-      redirect_to :back
+      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
     end
   end
 
@@ -53,7 +53,7 @@ class DmsfFoldersCopyController < ApplicationController
       redirect_to dmsf_folder_path(id: @target_project, folder_id: @folder)
     else
       flash[:error] = @folder.errors.full_messages.to_sentence
-      redirect_to :back
+      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
     end
   end
 

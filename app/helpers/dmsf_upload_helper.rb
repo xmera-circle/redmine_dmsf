@@ -3,7 +3,7 @@
 # 
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@lbcfree.net>
+# Copyright © 2011-21 Karel Pičman <karel.picman@lbcfree.net>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -152,7 +152,7 @@ module DmsfUploadHelper
           recipients = DmsfMailer.deliver_files_updated(project, files)
           if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
             unless recipients.empty?
-              to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
+              to = recipients.collect{ |r| h(r.name) }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
               to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
               controller.flash[:warning] = l(:warning_email_notifications, to: to) if controller
             end

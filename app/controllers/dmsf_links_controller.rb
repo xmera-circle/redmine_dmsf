@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -177,17 +177,17 @@ class DmsfLinksController < ApplicationController
       end
     end
     rescue => e
-      errors[:base] << e.message
+      errors.add(:base, e.message)
       return false
     end
-    redirect_back fallback_location: dmsf_folder_path(id: @project, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def restore
     if @dmsf_link.restore
       flash[:notice] = l(:notice_dmsf_link_restored)
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   private

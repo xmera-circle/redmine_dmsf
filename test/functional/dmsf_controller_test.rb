@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -50,8 +50,17 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
     # Permissions OK
     get :edit, params: { id: @project1, folder_id: @folder1}
     assert_response :success
+    # Custom fields
     assert_select 'label', { text: @custom_field.name }
     assert_select 'option', { value: @custom_value.value }
+    # Permissions - The form must contain a check box for each available role
+    roles = []
+    @project1.members.each do |m|
+      roles << m.roles
+    end
+    roles.uniq.each do |r|
+      assert_select 'input', { value: r.name }
+    end
   end
 
   def test_edit_folder_redirection_to_the_parent_folder
@@ -89,6 +98,21 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
     assert_select 'a', href:  dmsf_folder_path(id: @folder2.project.id, folder_id: @folder2.id)
     assert_select 'a', href: url_for(controller: :dmsf_files, action: 'view', id: @file4.id, only_path: true)
     assert_select 'a', href: url_for(controller: :dmsf_files, action: 'view', id: @link2.target_id, only_path: true)
+  end
+
+  def test_empty_trash
+    get :empty_trash, params: { id: @project1.id }
+    assert_equal 0, DmsfFolder.deleted.where(project_id: @project1.id).all.size
+    assert_equal 0, DmsfFile.deleted.where(project_id: @project1.id).all.size
+    assert_equal 0, DmsfLink.deleted.where(project_id: @project1.id).all.size
+    assert_redirected_to trash_dmsf_path(id: @project1.id)
+  end
+
+  def test_empty_trash_forbidden
+    # Missing permissions
+    @role_manager.remove_permission! :file_delete
+    get :empty_trash, params: { id: @project1.id }
+    assert_response :forbidden
   end
 
   def test_delete_forbidden
@@ -180,6 +204,35 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
     assert_select 'table.dmsf'
     # CSV export
     assert_select 'a.csv'
+    # WebDAV
+    assert_select 'a', text: 'WebDAV'
+    # 'Zero Size File' document and an expander is present
+    assert_select 'a', text: @file10.title
+    assert_select 'span.dmsf-expander'
+  end
+
+  def test_show_webdav_disabled
+    with_settings plugin_redmine_dmsf: { 'dmsf_webdav' => nil } do
+      get :show, params: { id: @project1.id }
+      assert_response :success
+      assert_select 'a', text: 'WebDAV', count: 0
+    end
+  end
+
+  def test_show_filters_found
+    get :show, params: { id: @project1.id, f: ['title'], op: { 'title' => '~' }, v: { 'title' => ['Zero'] } }
+    assert_response :success
+    # 'Zero Size File' document
+    assert_select 'a', text: @file10.title
+    # No expander if a filter is set
+    assert_select 'span.dmsf-expander', count: 0
+  end
+
+  def test_show_filters_not_found
+    get :show, params: { id: @project1.id, f: ['title'], op: { 'title' => '~' }, v: { 'title' => ['xxx'] } }
+    assert_response :success
+    # 'Zero Size File' document
+    assert_select 'a', text: @file10.title, count: 0
   end
 
   def test_show_without_file_manipulation
@@ -216,30 +269,34 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
 
   def test_email_entries_email_from_forbidden
     @role_manager.remove_permission! :email_documents
-    Setting.plugin_redmine_dmsf['dmsf_documents_email_from'] = 'karel.picman@kontron.com'
-    get :entries_operation, params: {id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
-    assert_response :forbidden
+    with_settings plugin_redmine_dmsf: {'dmsf_documents_email_from' => 'karel.picman@kontron.com'} do
+      get :entries_operation, params: {id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
+      assert_response :forbidden
+    end
   end
 
   def test_email_entries_email_from
-    Setting.plugin_redmine_dmsf['dmsf_documents_email_from'] = 'karel.picman@kontron.com'
-    get :entries_operation, params: { id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
-    assert_response :success
-    assert_select "input:match('value', ?)", Setting.plugin_redmine_dmsf['dmsf_documents_email_from']
+    with_settings plugin_redmine_dmsf: {'dmsf_documents_email_from' => 'karel.picman@kontron.com'} do
+      get :entries_operation, params: { id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
+      assert_response :success
+      assert_select "input:match('value', ?)", Setting.plugin_redmine_dmsf['dmsf_documents_email_from']
+    end
   end
 
   def test_email_entries_reply_to
-    Setting.plugin_redmine_dmsf['dmsf_documents_email_reply_to'] = 'karel.picman@kontron.com'
-    get :entries_operation, params: { id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
-    assert_response :success
-    assert_select "input:match('value', ?)", Setting.plugin_redmine_dmsf['dmsf_documents_email_reply_to']
+    with_settings plugin_redmine_dmsf: {'dmsf_documents_email_reply_to' => 'karel.picman@kontron.com'} do
+      get :entries_operation, params: { id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
+      assert_response :success
+      assert_select "input:match('value', ?)", Setting.plugin_redmine_dmsf['dmsf_documents_email_reply_to']
+    end
   end
 
   def test_email_entries_links_only
-    Setting.plugin_redmine_dmsf['dmsf_documents_email_links_only'] = '1'
-    get :entries_operation, params: { id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
-    assert_response :success
-    assert_select "input[id=email_links_only][value=1]"
+    with_settings plugin_redmine_dmsf: {'dmsf_documents_email_links_only' => '1'} do
+      get :entries_operation, params: { id: @project1, email_entries: 'Email', ids: ["file-#{@file1.id}"]}
+      assert_response :success
+      assert_select "input[id=email_links_only][value=1]"
+    end
   end
 
   def test_entries_email
@@ -301,6 +358,62 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
                               dmsf_folder: { title: 'New folder', description: 'Unit tests' } }
     end
     assert_redirected_to dmsf_folder_path(id: @project1, folder_id: @folder1)
+  end
+
+  def test_show_with_sub_projects
+    with_settings plugin_redmine_dmsf: {'dmsf_projects_as_subfolders' => '1'} do
+      get :show, params: { id: @project1.id }
+      assert_response :success
+      # @project3 is as a sub-folder
+      assert_select "tr##{@project3.id}pspan", count: 1
+    end
+  end
+
+  def test_show_without_sub_projects
+    get :show, params: { id: @project1.id }
+    assert_response :success
+    # @project3 is not as a sub-folder
+    assert_select "tr##{@project3.id}pspan", count: 0
+  end
+
+  def test_index
+    get :index
+    assert_response :success
+    # Projects
+    assert_select 'table.dmsf' do
+      assert_select 'tr' do
+        assert_select 'td.dmsf-title' do
+          assert_select 'a', text: "[#{@project1.name}]"
+          assert_select 'a', text: "[#{@project2.name}]"
+        end
+      end
+    end
+    # No context menu
+    assert_select 'div.contextual', count: 0
+    # No description
+    assert_select 'div.dmsf-header', count: 0
+    # No CSV export
+    assert_select 'a.csv', count: 0
+  end
+
+  def test_index_non_member
+    @request.session[:user_id] = @dlopper.id
+    get :index
+    assert_response :success
+    assert_select 'table.dmsf' do
+      assert_select 'tr' do
+        assert_select 'td.dmsf-title' do
+          assert_select 'a', text: "[#{@project1.name}]"
+          assert_select 'a', text: "[#{@project2.name}]", count: 0
+        end
+      end
+    end
+  end
+
+  def test_index_no_membership
+    @request.session[:user_id] = @someone.id
+    get :index
+    assert_response :forbidden
   end
 
 end

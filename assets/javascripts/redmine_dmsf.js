@@ -2,7 +2,7 @@
 *
 * Redmine plugin for Document Management System "Features"
 *
-* Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+* Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -20,7 +20,7 @@
 */
 
 /* Function to allow the projects to show up as a tree */
-function dmsfToggle(el, id, url)
+function dmsfToggle(el, project_id, folder_id, url)
 {
   // Expand not yet loaded selected row
   let selectedRow = $(el).parents('tr').first();
@@ -33,16 +33,18 @@ function dmsfToggle(el, id, url)
 
   if(selectedRow.hasClass('dmsf-not-loaded')){
 
-    dmsfExpandRows(id, selectedRow, url);
+    dmsfExpandRows(project_id, folder_id, selectedRow, url);
   }
+
+  let span = selectedRow.find('span.dmsf-expander');
 
   if(expand) {
-
-    $(selectedRow).switchClass('dmsf-collapsed', 'dmsf-expanded');
+    selectedRow.switchClass('dmsf-collapsed', 'dmsf-expanded');
+    span.addClass('open');
   }
   else {
-
-    $(selectedRow).switchClass('dmsf-expanded', 'dmsf-collapsed');
+    selectedRow.switchClass('dmsf-expanded', 'dmsf-collapsed');
+    span.removeClass('open');
   }
 
   // Hide collapsed rows and reset odd/even rows background colour
@@ -51,12 +53,11 @@ function dmsfToggle(el, id, url)
   $("tr.dmsf-tree").each(function(i, tr){
 
     // Visiblity
-    if($(tr).hasClass(id)) {
-
+    if($(tr).hasClass(folder_id ? (folder_id + 'f') : (project_id + 'p'))) {
       if (expand) {
 
         // Display only children with expanded parent
-        m = $(tr).attr('class').match(/(\d+) idnt/);
+        m = $(tr).attr('class').match(/(\d+(p|f)) idnt/);
 
         if(m){
 
@@ -69,7 +70,6 @@ function dmsfToggle(el, id, url)
       } else {
 
         if(!$(tr).hasClass('dmsf-hidden')) {
-
           $(tr).addClass('dmsf-hidden');
         }
       }
@@ -93,7 +93,7 @@ function dmsfToggle(el, id, url)
 }
 
 /* Add child rows */
-function dmsfExpandRows(id, parentRow, url) {
+function dmsfExpandRows(project_id, folder_id, parentRow, url) {
 
   $(parentRow).removeClass('dmsf-not-loaded');
 
@@ -105,13 +105,13 @@ function dmsfExpandRows(id, parentRow, url) {
     idnt = m[1];
   }
 
-  m = $(parentRow).attr('class').match(/((\d|\s)+) idnt/);
+  m = $(parentRow).attr('class').match(/((\d|p|f|\s)+) idnt/);
 
   if(m){
       classes = m[1]
   }
 
-  m = $(parentRow).attr('id').match(/^(\d+)/);
+  m = $(parentRow).attr('id').match(/^(\d+(p|f))/);
 
   if(m){
       classes = classes + ' ' + m[1]
@@ -122,7 +122,8 @@ function dmsfExpandRows(id, parentRow, url) {
     type: 'post',
     dataType: 'html',
     data: {
-      folder_id: id,
+      project_id: project_id,
+      folder_id: folder_id,
       row_id: $(parentRow).attr('id'),
       idnt: idnt,
       classes: classes
@@ -132,6 +133,7 @@ function dmsfExpandRows(id, parentRow, url) {
       if( m && (data.indexOf(' ' +  m[1] + ' ') < 0)) {
 
         $(parentRow).removeClass('dmsf-expanded');
+	$(parentRow).find('div.dmsf-row-control').removeClass('row-control dmsf-row-control');
 
         if(!$(parentRow).hasClass('dmsf-child')) {
 
@@ -144,7 +146,7 @@ function dmsfExpandRows(id, parentRow, url) {
       }
   })
   .fail(function() {
-      alert('An error in rows expanding');
+      console.log('An error in rows expanding');
   });
 }
 

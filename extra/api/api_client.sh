@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -51,17 +51,7 @@
 # curl -v -H "Content-Type: application/json" -X GET -H "X-Redmine-API-Key: USERS_API_KEY" http://localhost:3000/projects/1/dmsf.json?folder_id=3
 # both returns 404 not found, or json with following structure:
 # {  
-#   "dmsf":{  
-#      "dmsf_folders":[  
-#
-#      ],
-#      "total_count":0,
-#      "dmsf_files":[  
-#
-#      ],
-#      "dmsf_links":[  
-#
-#      ],
+#   "dmsf":{
 #      "found_folder":{  
 #         "id":3,
 #         "title":"Updated title"

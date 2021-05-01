@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,6 +22,7 @@
 class DmsfWorkflowsController < ApplicationController
 
   model_object DmsfWorkflow
+  menu_item :dmsf_approvalworkflows
 
   before_action :find_model_object, except: [:create, :new, :index, :assign, :assignment]
   before_action :find_project
@@ -83,7 +84,7 @@ class DmsfWorkflowsController < ApplicationController
                     :text_email_to_see_history)
                 if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
                   unless recipients.blank?
-                    to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
+                    to = recipients.collect{ |r| h(r.name) }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                     to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
                     flash[:warning] = l(:warning_email_notifications, to: to)
                   end
@@ -104,7 +105,7 @@ class DmsfWorkflowsController < ApplicationController
                     action.note)
                 if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
                   unless recipients.blank?
-                    to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
+                    to = recipients.collect{ |r| h(r.name) }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                     to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
                     flash[:warning] = l(:warning_email_notifications, to: to)
                   end
@@ -122,9 +123,10 @@ class DmsfWorkflowsController < ApplicationController
                     :text_email_subject_delegated,
                     :text_email_finished_delegated,
                     :text_email_to_proceed,
-                    action.note)
+                    action.note,
+                    action.dmsf_workflow_step_assignment.dmsf_workflow_step)
                   if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
-                    flash[:warning] = l(:warning_email_notifications, to: delegate.name)
+                    flash[:warning] = l(:warning_email_notifications, to: h(delegate.name))
                   end
                 end
               else
@@ -141,7 +143,9 @@ class DmsfWorkflowsController < ApplicationController
                           revision,
                           :text_email_subject_requires_approval,
                           :text_email_finished_step,
-                          :text_email_to_proceed)
+                          :text_email_to_proceed,
+                          nil,
+                          assignment.dmsf_workflow_step)
                       end
                     end
                     to = revision.dmsf_workflow_assigned_by_user
@@ -160,7 +164,7 @@ class DmsfWorkflowsController < ApplicationController
                       recipients.uniq!
                       recipients = recipients & DmsfMailer.get_notify_users(@project, [revision.dmsf_file], true)
                       unless recipients.empty?
-                        to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
+                        to = recipients.collect{ |r| h(r.name) }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                         to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
                         flash[:warning] = l(:warning_email_notifications, to: to)
                       end
@@ -176,7 +180,7 @@ class DmsfWorkflowsController < ApplicationController
         end
       end
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def assign
@@ -211,7 +215,7 @@ class DmsfWorkflowsController < ApplicationController
         rescue => e
           flash[:error] = e.message
         end
-        redirect_to :back
+        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
         return
       # DMS link (attached)
       elsif params[:dmsf_link_id].present?
@@ -223,7 +227,7 @@ class DmsfWorkflowsController < ApplicationController
         @dmsf_workflow_id = params[:dmsf_workflow_id]
       end
      else
-      redirect_to :back
+      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
       return
     end
     respond_to do |format|
@@ -390,7 +394,7 @@ class DmsfWorkflowsController < ApplicationController
         end
       end
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_workflow_path(@dmsf_workflow)
   end
 
   def reorder_steps
@@ -418,7 +422,7 @@ class DmsfWorkflowsController < ApplicationController
         flash[:error] = l(:notice_cannot_start_workflow)
       end
     end
-    redirect_to :back
+    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
   end
 
   def update_step

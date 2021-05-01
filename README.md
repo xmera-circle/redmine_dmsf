@@ -1,7 +1,7 @@
 Redmine DMSF Plugin
 ===================
 
-The current version of Redmine DMSF is **2.4.5** [![Build Status](https://api.travis-ci.org/danmunn/redmine_dmsf.png)](https://travis-ci.org/danmunn/redmine_dmsf)
+The current version of Redmine DMSF is **2.4.6** [![Build Status](https://api.travis-ci.org/danmunn/redmine_dmsf.png)](https://travis-ci.org/danmunn/redmine_dmsf)
 
 Redmine DMSF is Document Management System Features plugin for Redmine issue tracking system; It is aimed to replace current Redmine's Documents module.
 
@@ -36,7 +36,7 @@ Features
   * Documents and folders symbolic links  
   * Trash bin
   * Documents attachable to issues
-  * Compatible with Redmine 4.0.x and 4.1.x
+  * Compatible with Redmine 4.2.x
 
 Dependencies
 ------------
@@ -93,20 +93,20 @@ You can use following commands to install some of the required indexing tools:
 On Debian use:
 
 ```
-sudo apt-get install xapian-omega ruby-xapian libxapian-dev xpdf poppler-utils antiword unzip catdoc libwpd-tools \
+sudo apt-get install xapian-omega ruby-xapian libxapian-dev poppler-utils antiword unzip catdoc libwpd-tools \
 libwps-tools gzip unrtf catdvi djview djview3 uuid uuid-dev xz-utils libemail-outlook-message-perl
 ```
 
 On Ubuntu use:
 
 ```
-sudo apt-get install xapian-omega ruby-xapian libxapian-dev xpdf poppler-utils antiword  unzip catdoc libwpd-tools \
+sudo apt-get install xapian-omega ruby-xapian libxapian-dev poppler-utils antiword  unzip catdoc libwpd-tools \
 libwps-tools gzip unrtf catdvi djview djview3 uuid uuid-dev xz-utils libemail-outlook-message-perl
 ```
 
 On CentOS use:
 ```
-sudo yum install xapian-core xapian-bindings-ruby libxapian-dev xpdf poppler-utils antiword unzip catdoc libwpd-tools \
+sudo yum install xapian-core xapian-bindings-ruby libxapian-dev poppler-utils antiword unzip catdoc libwpd-tools \
 libwps-tools gzip unrtf catdvi djview djview3 uuid uuid-dev xz libemail-outlook-message-perl
 ```
 
@@ -152,7 +152,7 @@ Thumbnail with height of 200px: `{{dmsftn(8)}}`
 
 Thumbnail with custom size: `{{dmsftn(8, size=300)}}`
 
-Inline video of the file with id 8; it must be an image file such as MP4: `{{dmsf_video(9)}}`
+Inline video of the file with id 8; it must be a video file such as MP4: `{{dmsf_video(9)}}`
 
 Inline video with custom size: `{{dmsf_video(9, size=300)}}`
 

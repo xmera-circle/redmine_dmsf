@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-20 Karel Pičman <karel.picman@konton.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@konton.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -140,7 +140,7 @@ class DmsfFolder < ActiveRecord::Base
 
   def delete(commit = false)
     if locked?
-      errors[:base] << l(:error_folder_is_locked)
+      errors.add(:base, l(:error_folder_is_locked))
       return false
     end
     if commit
@@ -165,7 +165,7 @@ class DmsfFolder < ActiveRecord::Base
 
   def restore
     if dmsf_folder&.deleted?
-      errors[:base] << l(:error_parent_folder)
+      errors.add(:base, l(:error_parent_folder))
       return false
     end
     restore_recursively
@@ -565,7 +565,7 @@ class DmsfFolder < ActiveRecord::Base
       end
     else
       classes << 'dmsf-tree'
-      if type == 'folder'
+      if %(folder project).include?(type)
         classes << 'dmsf-collapsed'
         classes << 'dmsf-not-loaded'
       else
@@ -574,9 +574,11 @@ class DmsfFolder < ActiveRecord::Base
       if title =~ /^\./
         classes << 'dmsf-system'
       else
-        classes << 'hascontextmenu'
-        classes << 'dmsf-draggable'
-        if type =~ /^folder/
+        if (type != 'project')
+          classes << 'hascontextmenu'
+          classes << 'dmsf-draggable'
+        end
+        if %(project folder).include?(type)
           classes << 'dmsf-droppable'
         end
         if type =~ /link$/
@@ -585,6 +587,10 @@ class DmsfFolder < ActiveRecord::Base
       end
     end
     classes.join ' '
+  end
+
+  def empty?
+    !(dmsf_folders.visible.exists? || dmsf_files.visible.exists? || dmsf_links.visible.exists?)
   end
 
   private

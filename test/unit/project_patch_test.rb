@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -68,22 +68,38 @@ class ProjectPatchTest < RedmineDmsf::Test::UnitTest
 
   def test_copy_dmsf
     User.current = @jsmith
+
     assert_equal 4, @project1.dmsf_files.visible.all.size
     assert_equal 3, @project1.dmsf_folders.visible.all.size
     assert_equal 2, @project1.file_links.visible.all.size
     assert_equal 1, @project1.folder_links.visible.all.size
     assert_equal 0, @project1.url_links.visible.all.size
+
     assert_equal 1, @project3.dmsf_files.visible.all.size
-    assert_equal 1, @project3.dmsf_folders.all.size
+    assert_equal 0, @project3.dmsf_folders.visible.all.size
     assert_equal 0, @project3.file_links.visible.all.size
     assert_equal 0, @project3.folder_links.visible.all.size
     assert_equal 0, @project3.url_links.visible.all.size
+
     @project3.copy_dmsf @project1
-    assert_equal 4, @project3.dmsf_files.visible.all.size
+
+    assert_equal 5, @project3.dmsf_files.visible.all.size
     assert_equal 0, @project3.dmsf_folders.visible.all.size
     assert_equal 2, @project3.file_links.visible.all.size
     assert_equal 1, @project3.folder_links.visible.all.size
     assert_equal 0, @project3.url_links.visible.all.size
+  end
+
+  def test_dmsf_avaliable
+    # @project1
+    # L @project3
+    assert @project1.dmsf_available?
+    assert @project3.dmsf_available?
+    @project1.disable_module! :dmsf
+    assert @project3.dmsf_available?
+    @project3.disable_module! :dmsf
+    @project3.reload
+    assert !@project3.dmsf_available?
   end
 
 end

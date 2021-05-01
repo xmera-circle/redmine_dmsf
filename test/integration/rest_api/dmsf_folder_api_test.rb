@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ require File.expand_path('../../../test_helper', __FILE__)
 class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
   include Redmine::I18n
 
-  fixtures :dmsf_folders, :dmsf_files, :dmsf_file_revisions, :dmsf_locks
+  fixtures :dmsf_folders, :dmsf_files, :dmsf_file_revisions, :dmsf_locks, :dmsf_links
 
   def setup
     super
@@ -53,6 +53,30 @@ class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
     assert_select 'dmsf > dmsf_nodes > node > type', text: 'folder'
   end
 
+  def test_list_folder_with_sub_projects
+    with_settings plugin_redmine_dmsf: {'dmsf_projects_as_subfolders' => '1'} do
+      #curl -v -H "Content-Type: application/xml" -X GET -u ${1}:${2} http://localhost:3000/dmsf/files/17216.xml
+      get "/projects/#{@project1.identifier}/dmsf.xml?key=#{@token.value}"
+      assert_response :success
+      assert_equal 'application/xml', @response.content_type
+      # <?xml version="1.0" encoding="UTF-8"?>
+      # <dmsf>
+      #   <dmsf_nodes total_count="9" type="array">
+      #     <node>
+      #       <id>3</id>
+      #       <title>eCookbook Subproject 1</title>
+      #       <type>project</type>
+      #     </node>
+      #     ...
+      #   </dmsf_nodes>
+      # </dmsf>
+      # @project3 is as a sub-folder
+      assert_select 'dmsf > dmsf_nodes > node > id', text: @project3.id.to_s
+      assert_select 'dmsf > dmsf_nodes > node > title', text: @project3.name
+      assert_select 'dmsf > dmsf_nodes > node > type', text: 'project'
+    end
+  end
+
   def test_list_folder_limit_and_offset
     #curl -v -H "Content-Type: application/xml" -X GET -u ${1}:${2} "http://localhost:3000/dmsf/files/17216.xml?limit=1&offset=1"
     get "/projects/#{@project1.identifier}/dmsf.xml?key=#{@token.value}&limit=1&offset=2"
@@ -70,8 +94,8 @@ class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
     #     </dmsf_nodes>
     # </dmsf>
     assert_select 'dmsf > dmsf_nodes > node', count: 1
-    assert_select 'dmsf > dmsf_nodes > node > id', text: @folder7.id.to_s
-    assert_select 'dmsf > dmsf_nodes > node > title', text: @folder7.title
+    assert_select 'dmsf > dmsf_nodes > node > id', text: @folder6.id.to_s
+    assert_select 'dmsf > dmsf_nodes > node > title', text: @folder6.title
   end
 
   def test_create_folder
@@ -144,10 +168,16 @@ class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
     #   <found_folder>
     #     <id>1</id>
     #     <title>folder1</title>
+    #       <custom_fields>
+    #         <custom_field>
+    #           ...
+    #         <suctom_field>
+    #       </custom_fields>
     #   </found_folder>
     # </dmsf>
     assert_select 'dmsf > found_folder > id', text: @folder1.id.to_s
     assert_select 'dmsf > found_folder > title', text: @folder1.title
+    assert_select 'dmsf > found_folder > custom_fields > custom_field'
   end
 
   def test_find_folder_by_id_not_found

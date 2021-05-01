@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-20 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -118,7 +118,7 @@ module RedmineDmsf
         new_path = @path
         new_path = new_path + '/' unless new_path[-1,1] == '/'
         new_path = '/' + new_path unless new_path[0,1] == '/'
-        @__proxy.class.new "#{new_path}#{name}", request, response, @options.merge(user: @user)
+        ResourceProxy.new "#{new_path}#{name}", request, response, @options.merge(user: @user)
       end
       
       def child_project(p)
@@ -127,7 +127,7 @@ module RedmineDmsf
         new_path = new_path + '/' unless new_path[-1,1] == '/'
         new_path = '/' + new_path unless new_path[0,1] == '/'
         new_path += project_display_name
-        @__proxy.class.new new_path, request, response, @options.merge(user: @user, project: true)
+        ResourceProxy.new new_path, request, response, @options.merge(user: @user, project: true)
       end
 
       def parent
@@ -178,8 +178,10 @@ module RedmineDmsf
       end
 
       def load_projects(project_scope)
-        project_scope.visible.find_each do |p|
-          if dmsf_available?(p)
+        scope = project_scope.visible
+        scope = scope.non_templates if scope.respond_to?(:non_templates)
+        scope.find_each do |p|
+          if p.dmsf_available?
             @children << child_project(p)
           end
         end
@@ -189,11 +191,7 @@ module RedmineDmsf
         prj = nil
         if Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names']
           if name =~ /^\[?.+ (\d+)\]?$/
-            if parent_project
-              prj = scope.find_by(id: $1, parent_id: parent_project.id)
-            else
-              prj = scope.find_by(id: $1)
-            end
+            prj = scope.find_by(id: $1, parent_id: parent_project&.id)
             if prj
               # Check again whether it's really the project and not a folder with a number as a suffix
               prj = nil unless name.start_with?('[' + DmsfFolder::get_valid_title(prj.name))
@@ -205,13 +203,19 @@ module RedmineDmsf
           else
             identifier = name
           end
-          if parent_project
-            prj = scope.find_by(identifier: identifier, parent_id: parent_project.id)
-          else
-            prj = scope.find_by(identifier: identifier)
-          end
+          prj = scope.find_by(identifier: identifier, parent_id: parent_project&.id)
         end
         prj
+      end
+
+      # Adds the given xml namespace to namespaces and returns the prefix
+      def add_namespace(ns, prefix = "unknown#{rand 65536}")
+        @__proxy.add_namespace ns, prefix
+      end
+
+      # returns the prefix for the given namespace, adding it if necessary
+      def prefix_for(ns_href)
+        @__proxy.prefix_for ns_href
       end
 
       private
@@ -220,8 +224,10 @@ module RedmineDmsf
         return if @project # We have already got it
         pinfo = @path.split('/').drop(1)
         i = 1
+        project_scope = Project.visible
+        project_scope = project_scope.non_templates if project_scope.respond_to?(:non_templates)
         while pinfo.length > 0
-          prj = BaseResource::get_project(Project.visible, pinfo.first, @project)
+          prj = BaseResource::get_project(project_scope, pinfo.first, @project)
           if prj
             @project = prj
             if pinfo.length == 1
@@ -236,6 +242,7 @@ module RedmineDmsf
             else
               @file = DmsfFile.find_file_by_name(@project, @folder, pinfo.first)
               @folder = nil
+              raise Conflict unless (pinfo.length < 2 || @file)
               break # We're at the end
             end
           end
@@ -252,15 +259,6 @@ module RedmineDmsf
         else
           f
         end
-      end
-
-      # Go recursively through the project tree until a dmsf enabled project is found
-      def dmsf_available?(p)
-        return true if(p.visible? && p.module_enabled?(:dmsf))
-        p.children.each do |child|
-          return true if dmsf_available?(child)
-        end
-        false
       end
 
     end
