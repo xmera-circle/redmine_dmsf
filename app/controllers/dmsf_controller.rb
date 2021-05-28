@@ -47,7 +47,11 @@ class DmsfController < ApplicationController
   include DmsfQueriesHelper
 
   def permissions
-    render_403 unless DmsfFolder.permissions?(@folder, false)
+    if !DmsfFolder.permissions?(@folder, false)
+      render_403
+    elsif(@folder && @project && (@folder.project != @project))
+      render_404
+    end
     true
   end
 
@@ -77,7 +81,7 @@ class DmsfController < ApplicationController
     @trash_enabled = @folder_manipulation_allowed && @file_manipulation_allowed
     @query.dmsf_folder_id = @folder ? @folder.id : nil
     @query.deleted = false
-    @query.sub_projects |= (Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'] == '1')
+    @query.sub_projects |= Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'].present?
     if (@folder && @folder.deleted?) || (params[:folder_title].present? && !@folder)
       render_404
       return
