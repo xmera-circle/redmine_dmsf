@@ -20,7 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class DmsfWorkflow < ActiveRecord::Base
-
+  include ERB::Util
+  
   has_many :dmsf_workflow_steps, -> { order(step: :asc, operator: :desc) }, dependent: :destroy
   belongs_to :author, class_name: 'User'
 

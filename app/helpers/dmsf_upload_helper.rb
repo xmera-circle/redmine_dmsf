@@ -21,6 +21,7 @@
 
 module DmsfUploadHelper
   include Redmine::I18n
+  include ERB::Util
 
   def self.commit_files_internal(commited_files, project, folder, controller = nil, new_object = false, container = nil)
     failed_uploads = []
