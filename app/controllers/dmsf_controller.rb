@@ -23,7 +23,7 @@
 
 class DmsfController < ApplicationController
   include RedmineDmsf::DmsfZip
-  include ERB::Util
+  
 
   before_action :find_project, except: [:expand_folder, :index]
   before_action :authorize, except: [:expand_folder, :index]

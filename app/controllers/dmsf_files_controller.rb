@@ -21,7 +21,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class DmsfFilesController < ApplicationController
-  include ERB::Util
+  
   menu_item :dmsf
 
   before_action :find_file, except: [:delete_revision, :obsolete_revision]
