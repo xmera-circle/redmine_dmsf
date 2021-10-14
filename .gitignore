@@ -3,3 +3,4 @@
 !/test/fixtures/files/2017/**
 Gemfile.lock
 .history
+.byebug_history
