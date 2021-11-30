@@ -22,6 +22,9 @@
 
 <%= render partial: '/dmsf/path',
            locals: { folder: @folder, filename: nil, title: l(:label_attachment_new) } %>
+
+<%= render partial: 'dmsf/description' %>
+
 <%= form_tag({ controller: 'dmsf_upload', action: 'upload_files', id: @project, folder_id: @folder },
              { id: 'uploadform', multipart: true }) do %>
   <div class="box tabular">

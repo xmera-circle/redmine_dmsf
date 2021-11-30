@@ -67,8 +67,13 @@ class DmsfQuery < Query
       columns = available_columns
       if columns
         columns.each do |column|
-          if DmsfFolder.is_column_on?(column.name.to_s)
-            @default_column_names << column.name.to_sym
+          if column.is_a?(QueryCustomFieldColumn)
+            name = column.custom_field.name
+          else
+            name = column.name.to_s
+          end
+          if DmsfFolder.is_column_on?(name)
+            @default_column_names << column.name
           end
         end
       end
@@ -122,7 +127,16 @@ class DmsfQuery < Query
         when 'title'
           next if (operator == '~') && v.join.empty?
         end
-        filters_clauses << '(' + sql_for_field(field, operator, v, queried_table_name, field) + ')'
+        if field =~ /cf_(\d+)$/
+          # custom field
+          sql_cf = +sql_for_custom_field(field, operator, v, $1)
+          sql_cf.gsub!('dmsf_folders.id  IN (SELECT dmsf_folders.id', 'dmsf_folders.customized_id  IN (SELECT dmsf_folders.customized_id');
+          sql_cf.gsub!("customized_type='DmsfFolder'", 'customized_type=dmsf_folders.customized_type')
+          sql_cf.gsub!('customized_id=dmsf_folders.id', 'customized_id=dmsf_folders.customized_id')
+          filters_clauses << sql_cf
+        else
+          filters_clauses << '(' + sql_for_field(field, operator, v, queried_table_name, field) + ')'
+        end
       end
       filters_clauses.reject!(&:blank?)
       @statement = filters_clauses.any? ? filters_clauses.join(' AND ') : nil
@@ -156,11 +170,10 @@ class DmsfQuery < Query
     order_option = ['sort', group_by_sort_order, (options[:order] || sort_clause[0])].flatten.reject(&:blank?)
     if order_option.size > 1
       DmsfFileRevisionCustomField.visible.pluck(:id, :name).each do |id, name|
-        order_option[1].gsub!("COALESCE(cf_#{id}.value, '')", "cf_#{id}")
+        order_option[1].gsub!("cf_#{id}.value", "cf_#{id}")
       end
-      order_option[1].gsub!(',', " #{$1},")
-      if order_option[1] =~ /(DESC|ASC)$/
-        order_option[1].gsub!(',', " #{$1},")
+      if order_option[1] =~ /(firstname|major_version), (lastname|minor_version) (DESC|ASC)$/
+         order_option[1].gsub!(',', " #{$3},")
       end
     end
 
@@ -189,6 +202,15 @@ class DmsfQuery < Query
   end
 
   private
+
+  def sub_query
+    case ActiveRecord::Base.connection.adapter_name.downcase
+    when 'sqlserver'
+      'dmsf_file_revisions.id = (SELECT TOP 1 r.id FROM dmsf_file_revisions r WHERE r.created_at = (SELECT MAX(created_at) FROM dmsf_file_revisions rr WHERE rr.dmsf_file_id = dmsf_files.id) AND r.dmsf_file_id = dmsf_files.id ORDER BY id DESC)'
+    else
+      'dmsf_file_revisions.id = (SELECT r.id FROM dmsf_file_revisions r WHERE r.created_at = (SELECT MAX(created_at) FROM dmsf_file_revisions rr WHERE rr.dmsf_file_id = dmsf_files.id) AND r.dmsf_file_id = dmsf_files.id ORDER BY id DESC LIMIT 1)'
+    end
+  end
   
   def get_integer_type
     if Redmine::Database.mysql?
@@ -196,6 +218,15 @@ class DmsfQuery < Query
     else
       ActiveRecord::Base.connection.type_to_sql(:integer)
     end
+  end
+
+  def get_cf_query(id, type, table)
+    if Redmine::Database.mysql? || Redmine::Database.sqlite?
+      aggr_func = 'GROUP_CONCAT(value)'
+    else
+      aggr_func = "STRING_AGG(value, ',')"
+    end
+    ",(SELECT #{aggr_func} FROM custom_values WHERE custom_field_id = #{id} AND customized_type = '#{type}' AND customized_id = #{table}.id GROUP BY custom_field_id) AS cf_#{id}"
   end
 
   def dmsf_projects_scope
@@ -221,7 +252,9 @@ class DmsfQuery < Query
       CAST(NULL AS #{get_integer_type}) AS author,
       'project' AS type,
       CAST(0 AS #{get_integer_type}) AS deleted,
-      0 AS sort #{cf_columns}}).visible
+      '' as customized_type,
+      0 as customized_id,
+      0 AS sort#{cf_columns}}).visible
     if dmsf_folder_id || deleted
       scope.none
     else
@@ -233,7 +266,7 @@ class DmsfQuery < Query
   def dmsf_folders_scope
     cf_columns = +''
     DmsfFileRevisionCustomField.visible.order(:position).pluck(:id).each do |id|
-      cf_columns << ",(SELECT value from custom_values WHERE custom_field_id = #{id} AND customized_type = 'DmsfFolder' AND customized_id = dmsf_folders.id) AS cf_#{id}"
+      cf_columns << get_cf_query(id, 'DmsfFolder', 'dmsf_folders')
     end
     scope = DmsfFolder.select(%{
         dmsf_folders.id AS id,
@@ -252,7 +285,9 @@ class DmsfQuery < Query
         users.id AS author,
         'folder' AS type,
         dmsf_folders.deleted AS deleted,
-        1 AS sort #{cf_columns}}).
+        'DmsfFolder' AS customized_type,
+        dmsf_folders.id AS customized_id,
+        1 AS sort#{cf_columns}}).
       joins('LEFT JOIN users ON dmsf_folders.user_id = users.id')
     return scope.none unless project
     if deleted
@@ -275,7 +310,7 @@ class DmsfQuery < Query
     return nil unless project
     cf_columns = +''
     DmsfFileRevisionCustomField.visible.order(:position).pluck(:id).each do |id|
-      cf_columns << ",(SELECT value from custom_values WHERE custom_field_id = #{id} AND customized_type = 'DmsfFolder' AND customized_id = dmsf_folders.id) AS cf_#{id}"
+      cf_columns << get_cf_query(id, 'DmsfFolder', 'dmsf_folders')
     end
     scope = DmsfLink.select(%{
         dmsf_links.id AS id,
@@ -294,7 +329,9 @@ class DmsfQuery < Query
         users.id AS author,
         'folder-link' AS type,
         dmsf_links.deleted AS deleted,
-        1 AS sort #{cf_columns}}).
+        'DmsfFolder' as customized_type,
+        dmsf_folders.id as customized_id,
+        1 AS sort#{cf_columns}}).
       joins('LEFT JOIN dmsf_folders ON dmsf_links.target_id = dmsf_folders.id').
       joins('LEFT JOIN users ON users.id = COALESCE(dmsf_folders.user_id, dmsf_links.user_id)')
     if dmsf_folder_id
@@ -312,7 +349,7 @@ class DmsfQuery < Query
     return nil unless project
     cf_columns = +''
     DmsfFileRevisionCustomField.visible.order(:position).pluck(:id).each do |id|
-      cf_columns << ",(SELECT value from custom_values WHERE custom_field_id = #{id} AND customized_type = 'DmsfFileRevision' AND customized_id = dmsf_file_revisions.id) AS cf_#{id}"
+      cf_columns << get_cf_query(id, 'DmsfFileRevision', 'dmsf_file_revisions')
     end
     scope = DmsfFile.select(%{
         dmsf_files.id AS id,
@@ -331,7 +368,9 @@ class DmsfQuery < Query
         users.id AS author,
         'file' AS type,
         dmsf_files.deleted AS deleted,
-        2 AS sort #{cf_columns}}).
+        'DmsfFileRevision' as customized_type,
+        dmsf_file_revisions.id as customized_id,
+        2 AS sort#{cf_columns}}).
       joins(:dmsf_file_revisions).
       joins('LEFT JOIN users ON dmsf_file_revisions.user_id = users.id ').
       where(sub_query)
@@ -350,7 +389,7 @@ class DmsfQuery < Query
     return nil unless project
     cf_columns = +''
     DmsfFileRevisionCustomField.visible.order(:position).pluck(:id).each do |id|
-      cf_columns << ",(SELECT value from custom_values WHERE custom_field_id = #{id} AND customized_type = 'DmsfFileRevision' AND customized_id = dmsf_file_revisions.id) AS cf_#{id}"
+      cf_columns << get_cf_query(id, 'DmsfFileRevision', 'dmsf_file_revisions')
     end
     scope = DmsfLink.select(%{
         dmsf_links.id AS id,
@@ -369,7 +408,9 @@ class DmsfQuery < Query
         users.id AS author,
         'file-link' AS type,
         dmsf_links.deleted AS deleted,
-        2 AS sort #{cf_columns}}).
+        'DmsfFileRevision' as customized_type,
+        dmsf_file_revisions.id as customized_id,
+        2 AS sort#{cf_columns}}).
       joins('JOIN dmsf_files ON dmsf_files.id = dmsf_links.target_id').
       joins('JOIN dmsf_file_revisions ON dmsf_file_revisions.dmsf_file_id = dmsf_files.id').
       joins('LEFT JOIN users ON dmsf_file_revisions.user_id = users.id ').
@@ -409,7 +450,9 @@ class DmsfQuery < Query
         users.id AS author,
         'url-link' AS type,
         dmsf_links.deleted AS deleted,
-         2 AS sort #{cf_columns}}).
+        '' as customized_type,
+        0 as customized_id,
+        2 AS sort#{cf_columns}}).
       joins('LEFT JOIN users ON dmsf_links.user_id = users.id ')
     if dmsf_folder_id
       scope.where dmsf_links: { target_type: 'DmsfUrl', dmsf_folder_id: dmsf_folder_id, deleted: deleted }
@@ -420,15 +463,6 @@ class DmsfQuery < Query
         scope.where dmsf_links: { target_type: 'DmsfUrl', project_id: project.id, dmsf_folder_id: nil, deleted: deleted }
       end
     end
-  end
-
-  def sub_query
-    case ActiveRecord::Base.connection.adapter_name.downcase
-    when 'sqlserver'
-      'dmsf_file_revisions.id = (SELECT TOP 1 r.id FROM dmsf_file_revisions r WHERE r.created_at = (SELECT MAX(created_at) FROM dmsf_file_revisions rr WHERE rr.dmsf_file_id = dmsf_files.id) AND r.dmsf_file_id = dmsf_files.id ORDER BY id DESC)'
-    else
-      'dmsf_file_revisions.id = (SELECT r.id FROM dmsf_file_revisions r WHERE r.created_at = (SELECT MAX(created_at) FROM dmsf_file_revisions rr WHERE rr.dmsf_file_id = dmsf_files.id) AND r.dmsf_file_id = dmsf_files.id ORDER BY id DESC LIMIT 1)'
-   end
   end
 
 end

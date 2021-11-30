@@ -180,7 +180,7 @@ class DmsfWorkflowsController < ApplicationController
         end
       end
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def assign
@@ -215,8 +215,8 @@ class DmsfWorkflowsController < ApplicationController
         rescue => e
           flash[:error] = e.message
         end
-        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
-        return
+        #redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
+        #return
       # DMS link (attached)
       elsif params[:dmsf_link_id].present?
         @dmsf_link_id = params[:dmsf_link_id]
@@ -226,12 +226,14 @@ class DmsfWorkflowsController < ApplicationController
         @attachment_id = params[:attachment_id]
         @dmsf_workflow_id = params[:dmsf_workflow_id]
       end
-     else
-      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
-      return
+      #else
+      #redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
+      #return
     end
     respond_to do |format|
-      format.html
+      format.html {
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
+      }
       format.js
     end
   end
@@ -261,7 +263,6 @@ class DmsfWorkflowsController < ApplicationController
 
   def new
     @dmsf_workflow = DmsfWorkflow.new
-
     # Reload
     if params[:dmsf_workflow] && params[:dmsf_workflow][:name].present?
       @dmsf_workflow.name = params[:dmsf_workflow][:name]
@@ -269,7 +270,6 @@ class DmsfWorkflowsController < ApplicationController
       names = DmsfWorkflow.where(id: params[:dmsf_workflow][:id]).pluck(:name)
       @dmsf_workflow.name = names.first
     end
-
     render layout: !request.xhr?
   end
 
@@ -300,8 +300,8 @@ class DmsfWorkflowsController < ApplicationController
 
   def update
     if params[:dmsf_workflow]
-      res = @dmsf_workflow.update_attributes({ name: params[:dmsf_workflow][:name] }) if params[:dmsf_workflow][:name].present?
-      res = @dmsf_workflow.update_attributes({ status: params[:dmsf_workflow][:status] }) if params[:dmsf_workflow][:status].present?
+      res = @dmsf_workflow.update(name: params[:dmsf_workflow][:name]) if params[:dmsf_workflow][:name].present?
+      res = @dmsf_workflow.update(status: params[:dmsf_workflow][:status]) if params[:dmsf_workflow][:status].present?
       if res
         flash[:notice] = l(:notice_successful_update)
         if @project
@@ -422,7 +422,7 @@ class DmsfWorkflowsController < ApplicationController
         flash[:error] = l(:notice_cannot_start_workflow)
       end
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def update_step

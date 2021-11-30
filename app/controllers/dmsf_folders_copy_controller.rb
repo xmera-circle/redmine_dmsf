@@ -29,31 +29,56 @@ class DmsfFoldersCopyController < ApplicationController
   before_action :find_target_folder
   before_action :check_target_folder, only: [:copy, :move]
 
+  accept_api_auth :copy, :move
+
   def new
     @projects = DmsfFolder.allowed_target_projects_on_copy
     @folders = DmsfFolder.directory_tree(@target_project, @folder)
     @target_folder = DmsfFolder.visible.find(params[:target_folder_id]) unless params[:target_folder_id].blank?
+    @back_url = params[:back_url]
     render layout: !request.xhr?
   end
 
   def copy
     new_folder = @folder.copy_to(@target_project, @target_folder)
-    if new_folder.errors.empty?
+    success = new_folder.errors.empty?
+    if success
       flash[:notice] = l(:notice_successful_update)
-      redirect_to dmsf_folder_path(id: @target_project, folder_id: new_folder)
     else
       flash[:error] = new_folder.errors.full_messages.to_sentence
-      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    end
+    respond_to do |format|
+      format.html do
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder.dmsf_folder)
+      end
+      format.api do
+        if success
+          render_api_ok
+        else
+          render_validation_errors new_folder
+        end
+      end
     end
   end
 
   def move
-    if @folder.move_to(@target_project, @target_folder)
+    success = @folder.move_to(@target_project, @target_folder)
+    if success
       flash[:notice] = l(:notice_successful_update)
-      redirect_to dmsf_folder_path(id: @target_project, folder_id: @folder)
     else
       flash[:error] = @folder.errors.full_messages.to_sentence
-      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    end
+    respond_to do |format|
+      format.html do
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder.dmsf_folder)
+      end
+      format.api do
+        if success
+          render_api_ok
+        else
+          render_validation_errors @folder
+        end
+      end
     end
   end
 
@@ -71,14 +96,15 @@ class DmsfFoldersCopyController < ApplicationController
   end
 
   def find_target_folder
-    if params[:target_project_id].present?
-      @target_project = Project.find params[:target_project_id]
+    if params[:dmsf_file_or_folder] && params[:dmsf_file_or_folder][:target_project_id].present?
+      @target_project = Project.find params[:dmsf_file_or_folder][:target_project_id]
     else
       @target_project = @project
     end
-    if params[:target_folder_id].present?
-      @target_folder = DmsfFolder.find(params[:target_folder_id])
-      raise ActiveRecord::RecordNotFound unless DmsfFolder.visible.where(id: params[:target_folder_id]).exists?
+    if params[:dmsf_file_or_folder] && params[:dmsf_file_or_folder][:target_folder_id].present?
+      target_folder_id = params[:dmsf_file_or_folder][:target_folder_id]
+      @target_folder = DmsfFolder.find(target_folder_id)
+      raise ActiveRecord::RecordNotFound unless DmsfFolder.visible.where(id: target_folder_id).exists?
     end
   rescue ActiveRecord::RecordNotFound
     render_404

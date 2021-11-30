@@ -49,26 +49,46 @@ module DmsfQueriesHelper
         content_tag(:span, '', class: 'icon icon-none')
     when :id
       case item.type
-      when 'file', 'file-link'
+      when 'file'
         if item&.deleted > 0
-          super column, item, value
+          h(value)
         else
           link_to h(value), dmsf_file_path(id: item.id)
         end
-      when 'folder', 'folder-link'
+      when 'file-link'
+        if item&.deleted > 0
+          h(item.revision_id)
+        else
+          link_to h(item.revision_id), dmsf_file_path(id: item.revision_id)
+        end
+      when 'folder'
         if item.id
           if item&.deleted > 0
-            super column, item, value
+            h(value)
           else
             link_to h(value), edit_dmsf_path(id: item.project_id, folder_id: item.id)
           end
         else
           if item&.deleted > 0
-            super column, item, item.project_id
+            h(item.project_id)
           else
             link_to h(item.project_id), edit_root_dmsf_path(id: item.project_id)
           end
-         end
+        end
+      when 'folder-link'
+        if item.id
+          if item&.deleted > 0
+            h(item.revision_id)
+          else
+            link_to h(item.revision_id), edit_dmsf_path(id: item.project_id, folder_id: item.revision_id)
+          end
+        else
+          if item&.deleted > 0
+            h(item.project_id)
+          else
+            link_to h(item.project_id), edit_root_dmsf_path(id: item.project_id)
+          end
+        end
       else
         h(value)
       end
@@ -93,7 +113,13 @@ module DmsfQueriesHelper
           tag = content_tag('span', tag, class: 'icon icon-folder')
         end
         unless filter_any?
-          tag = "<span class=\"dmsf-expander\" onclick=\"dmsfToggle(this, '#{item.id}', null,'#{escape_javascript(expand_folder_dmsf_path)}')\"></span>".html_safe + tag
+          path = expand_folder_dmsf_path
+          columns = params['c']
+          if columns.present?
+            path << '?'
+            path << columns.map{ |column| "c[]=#{column}" }.join('&')
+          end
+          tag = "<span class=\"dmsf-expander\" onclick=\"dmsfToggle(this, '#{item.id}', null,'#{escape_javascript(path)}')\"></span>".html_safe + tag
           tag = content_tag('div', tag, class: 'row-control dmsf-row-control')
         end
         tag + content_tag('div', item.filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
@@ -103,7 +129,13 @@ module DmsfQueriesHelper
         else
           tag = link_to(h(value), dmsf_folder_path(id: item.project, folder_id: item.id), class: 'icon icon-folder')
           unless filter_any?
-            tag = "<span class=\"dmsf-expander\" onclick=\"dmsfToggle(this, '#{item.project.id}', '#{item.id}','#{escape_javascript(expand_folder_dmsf_path)}')\"></span>".html_safe + tag
+            path = expand_folder_dmsf_path
+            columns = params['c']
+            if columns.present?
+              path << '?'
+              path << columns.map{ |column| "c[]=#{column}" }.join('&')
+            end
+            tag = "<span class=\"dmsf-expander\" onclick=\"dmsfToggle(this, '#{item.project.id}', '#{item.id}','#{escape_javascript(path)}')\"></span>".html_safe + tag
             tag = content_tag('div', tag, class: 'row-control dmsf-row-control')
           end
         end
@@ -134,7 +166,10 @@ module DmsfQueriesHelper
             tag = "<span class=\"dmsf-expander\"></span>".html_safe + tag
           end
         end
-        tag + content_tag('div', item.filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
+        member = Member.find_by(user_id: User.current.id, project_id: item.project_id)
+        revision = DmsfFileRevision.find_by(id: item.customized_id)
+        filename = revision ? revision.formatted_name(member) : item.filename
+        tag + content_tag('div', filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
       when 'url-link'
         if item&.deleted?
           tag = content_tag('span', value, class: 'icon dmsf-icon-link')

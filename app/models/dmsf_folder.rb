@@ -94,7 +94,7 @@ class DmsfFolder < ActiveRecord::Base
   validates :title, presence: true, dmsf_file_name: true
   validates :project, presence: true
   validates_uniqueness_of :title, scope: [:dmsf_folder_id, :project_id, :deleted],
-    conditions: -> { where(deleted: STATUS_ACTIVE) }
+    conditions: -> { where(deleted: STATUS_ACTIVE) }, case_sensitive: true
   validates :description, length: { maximum: 65535 }
   validates :dmsf_folder, dmsf_folder_parent: true, if: Proc.new { |folder| !folder.new_record? }
 
@@ -273,7 +273,7 @@ class DmsfFolder < ActiveRecord::Base
     save
   end
 
-  def copy_to(project, folder)
+  def copy_to(project, folder, copy_files = true)
     new_folder = DmsfFolder.new
     new_folder.dmsf_folder = folder ? folder : nil
     new_folder.project = folder ? folder.project : project
@@ -291,14 +291,16 @@ class DmsfFolder < ActiveRecord::Base
       Rails.logger.error new_folder.errors.full_messages.to_sentence
       return new_folder
     end
-    dmsf_files.visible.find_each do |f|
-      f.copy_to project, new_folder
+    if copy_files
+      dmsf_files.visible.find_each do |f|
+        f.copy_to project, new_folder
+      end
+      dmsf_links.visible.find_each do |l|
+        l.copy_to project, new_folder
+      end
     end
     dmsf_folders.visible.find_each do |s|
-      s.copy_to project, new_folder
-    end
-    dmsf_links.visible.find_each do |l|
-      l.copy_to project, new_folder
+      s.copy_to project, new_folder, copy_files
     end
     dmsf_folder_permissions.find_each do |p|
       p.copy_to new_folder
@@ -468,7 +470,8 @@ class DmsfFolder < ActiveRecord::Base
     # Attributes
     self.title = params[:dmsf_folder][:title].strip
     self.description = params[:dmsf_folder][:description].strip
-    self.dmsf_folder_id = params[:parent_id]
+    self.dmsf_folder_id = params[:parent_id].present? ? params[:parent_id] : params[:dmsf_folder][:dmsf_folder_id]
+    self.system = params[:dmsf_folder][:system].present?
     # Custom fields
     if params[:dmsf_folder][:custom_field_values].present?
       i = 0

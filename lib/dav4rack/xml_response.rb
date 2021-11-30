@@ -56,51 +56,13 @@ module DAV4Rack
       end
     end
 
-
-    def render_lockdiscovery(*args)
-      render_xml ox_element(D_PROP,
-                            ox_element(D_LOCKDISCOVERY,
-                                       activelock(*args))
-                           )
+    def render_lockdiscovery(**options)
+      render_xml ox_element(D_PROP, ox_element(D_LOCKDISCOVERY, activelock(**options)))
     end
-
 
     #
     # helpers for creating single elements
     #
-
-
-    # returns an activelock Ox::Element for the given lock data
-    def activelock(time: nil, token:, depth:,
-                      scope: nil, type: nil, owner: nil, root: nil)
-
-      Ox::Element.new(D_ACTIVELOCK).tap do |activelock|
-        if scope
-          scope = Ox::Element.new("#{DAV_NAMESPACE_NAME}:#{scope}")
-          activelock << ox_element(D_LOCKSCOPE,  scope)
-        end
-        if type
-          type = Ox::Element.new("#{DAV_NAMESPACE_NAME}:#{type}")
-          activelock << ox_element(D_LOCKTYPE)
-        end
-        activelock << ox_element(D_DEPTH, depth)
-        activelock << ox_element(D_TIMEOUT,
-                                 (time ? "Second-#{time}" : INFINITY))
-
-        token = ox_element(D_HREF, token)
-        activelock << ox_element(D_LOCKTOKEN, token)
-
-        if owner
-          activelock << ox_element(D_OWNER, owner)
-        end
-
-        if root
-          root = ox_element(D_HREF, root)
-          activelock << ox_element(D_LOCKROOT, root)
-        end
-      end
-
-    end
 
     def response(href, status)
       r = Ox::Element.new(D_RESPONSE)
@@ -117,6 +79,29 @@ module DAV4Rack
       ox_element D_STATUS, "#{@http_version} #{status.status_line}"
     end
 
+    private
+
+    def activelock(time: nil, token:, depth:, scope: nil, type: nil, owner: nil, root: nil)
+      Ox::Element.new(D_ACTIVELOCK).tap do |activelock|
+        if scope
+          value = Ox::Element.new("#{DAV_NAMESPACE_NAME}:#{scope}")
+          activelock << ox_element(D_LOCKSCOPE,  value)
+        end
+        if type
+          value = Ox::Element.new("#{DAV_NAMESPACE_NAME}:#{type}")
+          activelock << ox_element(D_LOCKTYPE, value)
+        end
+        activelock << ox_element(D_DEPTH, depth)
+        activelock << ox_element(D_TIMEOUT, (time ? "Second-#{time}" : INFINITY))
+        value = ox_element(D_HREF, token)
+        activelock << ox_element(D_LOCKTOKEN, value)
+        activelock << ox_element(D_OWNER, owner) if owner
+        if root
+          value = ox_element(D_HREF, root)
+          activelock << ox_element(D_LOCKROOT, value)
+        end
+      end
+    end
 
   end
 end

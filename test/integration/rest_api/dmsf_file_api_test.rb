@@ -24,7 +24,7 @@ require File.expand_path('../../../test_helper', __FILE__)
 class DmsfFileApiTest < RedmineDmsf::Test::IntegrationTest
   include Redmine::I18n
 
-  fixtures :dmsf_files, :dmsf_file_revisions, :dmsf_locks
+  fixtures :dmsf_files, :dmsf_file_revisions, :dmsf_locks, :custom_fields
 
   def setup
     super
@@ -36,7 +36,7 @@ class DmsfFileApiTest < RedmineDmsf::Test::IntegrationTest
     #curl -v -H "Content-Type: application/xml" -X GET -u ${1}:${2} http://localhost:3000/dmsf/files/17216.xml
     get "/dmsf/files/#{@file1.id}.xml?key=#{@token.value}"
     assert_response :success
-    assert_equal 'application/xml', @response.content_type
+    assert @response.media_type.include?('application/xml')
     # <?xml version="1.0" encoding="UTF-8"?>
     # <dmsf_file>
     #   <id>1</id>
@@ -113,7 +113,7 @@ class DmsfFileApiTest < RedmineDmsf::Test::IntegrationTest
     #curl --data-binary "@cat.gif" -H "Content-Type: application/octet-stream" -X POST -u ${1}:${2} http://localhost:3000/projects/12/dmsf/upload.xml?filename=cat.gif
     post "/projects/#{@project1.id}/dmsf/upload.xml?filename=test.txt&key=#{@token.value}", params: 'File content', headers: { "CONTENT_TYPE" => 'application/octet-stream' }
     assert_response :created
-    assert_equal 'application/xml', response.content_type
+    assert @response.media_type.include?('application/xml')
     #<?xml version="1.0" encoding="UTF-8"?>
     # <upload>
     #   <token>2.8bb2564936980e92ceec8a5759ec34a8</token>
@@ -198,6 +198,62 @@ class DmsfFileApiTest < RedmineDmsf::Test::IntegrationTest
     assert_select 'errors > error', text: l(:title_locked_by_user, user: @admin_user.name)
     @file1.reload
     assert_equal DmsfFile::STATUS_ACTIVE, @file1.deleted
+  end
+
+  def test_create_revision
+    # curl -v -H "Content-Type: application/xml" -X POST --data "@revision.xml" -u ${1}:${2} http://localhost:3000/dmfs/files/1/revision/create.xml
+    payload = %{
+      <?xml version="1.0" encoding="utf-8" ?>
+      <dmsf_file_revision>
+        <title>#{@file1.name}</title>
+        <name>#{@file1.name}</name>
+        <description>SQL script</description>
+        <comment>REST API</comment>
+        <custom_field_values>
+          <custom_field_value>User documentation</custom_field_value>
+        </custom_field_values>
+      </dmsf_file_revision>
+    }
+    post "/dmsf/files/#{@file1.id}/revision/create.xml?key=#{@token.value}", params: payload,
+         headers: { 'CONTENT_TYPE' => 'application/xml' }
+    assert_response :success
+    # <?xml version="1.0" encoding="UTF-8"?>
+    # <dmsf_file_revision>
+    #   <id>293566</id>
+    # </dmsf_file_revision>
+    assert_select 'dmsf_file_revision > id', text: @file1.last_revision.id.to_s
+  end
+
+  def test_copy_document
+    #curl -v -H "Content-Type: application/xml" -X POST --data "@file_or_folder_copy_move.xml" -H "X-Redmine-API-Key: USERS_API_KEY" http://localhost:3000/dmsf/files/1/copy/copy.xml
+    payload = %{
+      <?xml version="1.0" encoding="utf-8" ?>
+      <dmsf_file_or_folder>
+        <target_project_id>#{@project1.id}</target_project_id>
+        <target_folder_id>#{@folder1.id}</target_folder_id>
+      </dmsf_file_or_folder>
+    }
+    assert_difference('@folder1.dmsf_files.count', 1) do
+      post "/dmsf/files/#{@file1.id}/copy/copy.xml?key=#{@token.value}", params: payload,
+           headers: { 'CONTENT_TYPE' => 'application/xml' }
+    end
+    assert_response :success
+  end
+
+  def test_move_document
+    #curl -v -H "Content-Type: application/xml" -X POST --data "@file_or_folder_copy_move.xml" -H "X-Redmine-API-Key: USERS_API_KEY" http://localhost:3000/dmsf/files/1/copy/move.xml
+    payload = %{
+      <?xml version="1.0" encoding="utf-8" ?>
+      <dmsf_file_or_folder>
+        <target_project_id>#{@project1.id}</target_project_id>
+        <target_folder_id>#{@folder1.id}</target_folder_id>
+      </dmsf_file_or_folder>
+    }
+    assert_difference('@folder1.dmsf_files.count', 1) do
+      post "/dmsf/files/#{@file1.id}/copy/move.xml?key=#{@token.value}", params: payload,
+           headers: { 'CONTENT_TYPE' => 'application/xml' }
+    end
+    assert_response :success
   end
 
 end

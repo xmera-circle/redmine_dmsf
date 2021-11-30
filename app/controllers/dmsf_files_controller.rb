@@ -30,7 +30,7 @@ class DmsfFilesController < ApplicationController
   before_action :authorize
   before_action :permissions
 
-  accept_api_auth :show, :view, :delete
+  accept_api_auth :show, :view, :delete, :create_revision
 
   helper :custom_fields
   helper :dmsf_workflows
@@ -62,15 +62,10 @@ class DmsfFilesController < ApplicationController
       access.action = DmsfFileRevisionAccess::DownloadAction
       access.save!
       member = Member.find_by(user_id: User.current.id, project_id: @file.project.id)
-      if member && !member.dmsf_title_format.nil? && !member.dmsf_title_format.empty?
-        title_format = member.dmsf_title_format
-      else
-        title_format = Setting.plugin_redmine_dmsf['dmsf_global_title_format']
-      end
       # IE has got a tendency to cache files
       expires_in(0.year, 'must-revalidate' => true)
       send_file @revision.disk_file,
-        filename: filename_for_content_disposition(@revision.formatted_name(title_format)),
+        filename: filename_for_content_disposition(@revision.formatted_name(member)),
         type: @revision.detect_content_type,
         disposition: params[:disposition].present? ? params[:disposition] : @revision.dmsf_file.disposition
     rescue DmsfAccessError => e
@@ -100,9 +95,7 @@ class DmsfFilesController < ApplicationController
 
   def create_revision
     if params[:dmsf_file_revision]
-      if @file.locked_for_user?
-        flash[:error] = l(:error_file_is_locked)
-      else
+      unless @file.locked_for_user?
         revision = DmsfFileRevision.new
         revision.title = params[:dmsf_file_revision][:title]
         revision.name = params[:dmsf_file_revision][:name]
@@ -148,6 +141,7 @@ class DmsfFilesController < ApplicationController
         end
 
         @file.name = revision.name
+        ok = true
 
         if revision.save
           revision.assign_workflow params[:dmsf_workflow_id]
@@ -158,43 +152,48 @@ class DmsfFilesController < ApplicationController
               Rails.logger.error e.message
               flash[:error] = e.message
               revision.destroy
-              redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
-              return
+              ok = false
             end
           end
-          if @file.locked? && !@file.locks.empty?
+          if ok && @file.locked? && !@file.locks.empty?
             begin
               @file.unlock!
               flash[:notice] = "#{l(:notice_file_unlocked)}, "
             rescue => e
               Rails.logger.error "Cannot unlock the file: #{e.message}"
+              ok = false
             end
           end
-          if @file.save
+          if ok && @file.save
             @file.set_last_revision revision
             Redmine::Hook.call_hook :dmsf_helper_upload_after_commit, { file: @file }
-            flash[:notice] = (flash[:notice].nil? ? '' : flash[:notice]) + l(:notice_file_revision_created)
             begin
               recipients = DmsfMailer.deliver_files_updated(@project, [@file])
               if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
                 if recipients.any?
                   to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                   to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
-                  flash[:warning] = l(:warning_email_notifications, to: to)
                 end
               end
             rescue => e
               Rails.logger.error "Could not send email notifications: #{e.message}"
             end
-          else
-            flash[:error] = @file.errors.full_messages.to_sentence
           end
-        else
-          flash[:error] = revision.errors.full_messages.to_sentence
         end
       end
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+
+    respond_to do |format|
+      format.html do
+          flash[:error] = l(:error_file_is_locked) if @file.locked_for_user?
+          flash[:warning] = l(:warning_email_notifications, to: to) if to
+          flash[:error] = @file.errors.full_messages.to_sentence if @file.errors.any?
+          flash[:error] = revision.errors.full_messages.to_sentence if revision.errors.any?
+          flash[:notice] = (flash[:notice].nil? ? '' : flash[:notice]) + l(:notice_file_revision_created) if ok
+          redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
+      end
+      format.api
+    end
   end
 
   def delete
@@ -225,7 +224,7 @@ class DmsfFilesController < ApplicationController
     end
     respond_to do |format|
       format.html do
-        redirect_to dmsf_folder_path(id: @project, folder_id: @folder)
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
       end
       format.api { result ? render_api_ok : render_validation_errors(@file) }
     end
@@ -268,7 +267,7 @@ class DmsfFilesController < ApplicationController
         flash[:error] = e.message
       end
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def unlock
@@ -286,7 +285,7 @@ class DmsfFilesController < ApplicationController
         flash[:error] = l(:error_only_user_that_locked_file_can_unlock_it)
       end
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def notify_activate
@@ -296,7 +295,7 @@ class DmsfFilesController < ApplicationController
       @file.notify_activate
       flash[:notice] = l(:notice_file_notifications_activated)
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def notify_deactivate
@@ -306,7 +305,7 @@ class DmsfFilesController < ApplicationController
       @file.notify_deactivate
       flash[:notice] = l(:notice_file_notifications_deactivated)
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def restore
@@ -315,7 +314,7 @@ class DmsfFilesController < ApplicationController
     else
       flash[:error] = @file.errors.full_messages.to_sentence
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_to trash_dmsf_path(@project)
   end
 
   def thumbnail

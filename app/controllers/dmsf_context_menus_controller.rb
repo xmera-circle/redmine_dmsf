@@ -39,8 +39,8 @@ class DmsfContextMenusController < ApplicationController
       @locked = @dmsf_folder.locked?
       @project = @dmsf_folder.project
       @allowed = User.current.allowed_to?(:folder_manipulation, @project)
-      @unlockable = @allowed && @dmsf_folder.unlockable? && (!@dmsf_folder.locked_for_user?) &&
-          User.current.allowed_to?(:force_file_unlock, @project)
+      @unlockable = @allowed && @dmsf_folder.unlockable? && (!@dmsf_folder.locked_for_user? ||
+        User.current.allowed_to?(:force_file_unlock, @project))
       @email_allowed = User.current.allowed_to?(:email_documents, @project)
     elsif @dmsf_link # url link
       @locked = false
@@ -56,6 +56,7 @@ class DmsfContextMenusController < ApplicationController
           User.current.allowed_to?(:folder_manipulation, @project)
       @email_allowed = User.current.allowed_to?(:email_documents, @project)
     end
+    @back_url = dmsf_folder_path(id: @project, folder_id: @folder)
     render layout: false
   rescue ActiveRecord::RecordNotFound
     render_404

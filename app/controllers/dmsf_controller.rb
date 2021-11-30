@@ -46,6 +46,7 @@ class DmsfController < ApplicationController
   include QueriesHelper
   helper :dmsf_queries
   include DmsfQueriesHelper
+  helper :context_menus
 
   def permissions
     if !DmsfFolder.permissions?(@folder, false)
@@ -161,7 +162,7 @@ class DmsfController < ApplicationController
       selected_dir_links.blank? && selected_file_links.blank? &&
       selected_url_links.blank?
       flash[:warning] = l(:warning_no_entries_selected)
-      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+      redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
       return
     end
 
@@ -180,13 +181,13 @@ class DmsfController < ApplicationController
         email_entries(selected_folders, selected_files)
       elsif params[:restore_entries].present?
         restore_entries(selected_folders, selected_files, selected_dir_links, selected_file_links, selected_url_links)
-        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
       elsif params[:delete_entries].present?
         delete_entries(selected_folders, selected_files, selected_dir_links, selected_file_links, selected_url_links, false)
-        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
       elsif params[:destroy_entries].present?
         delete_entries(selected_folders, selected_files, selected_dir_links, selected_file_links, selected_url_links, true)
-        redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
       else
         download_entries(selected_folders, selected_files)
       end
@@ -208,14 +209,14 @@ class DmsfController < ApplicationController
         return redirect_to dmsf_folder_path id: @project, folder_id: @folder, custom_field_id: key, custom_value: value
       end
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def entries_email
     if params[:email][:to].strip.blank?
       flash[:error] = l(:error_email_to_must_be_entered)
     else
-      DmsfMailer.deliver_send_documents(@project, params[:email].permit!, User.current)
+      DmsfMailer.deliver_send_documents @project, params[:email].permit!, User.current
       if(File.exist?(params[:email][:zipped_content]))
         File.delete(params[:email][:zipped_content])
       else
@@ -223,7 +224,7 @@ class DmsfController < ApplicationController
       end
       flash[:notice] = l(:notice_email_sent, params[:email][:to])
     end
-    redirect_to dmsf_folder_path(id: @project, folder_id: @folder)
+    redirect_back_or_default(dmsf_folder_path(id: @project, folder_id: @folder))
   end
 
   def new
@@ -303,7 +304,7 @@ class DmsfController < ApplicationController
     respond_to do |format|
       format.html do
         if commit
-          redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+          redirect_to trash_dmsf_path(@project)
         else
           redirect_to dmsf_folder_path(id: @project, folder_id: @parent)
         end
@@ -318,7 +319,7 @@ class DmsfController < ApplicationController
     else
       flash[:error] = @folder.errors.full_messages.to_sentence
     end
-    redirect_back_or_default trash_dmsf_path(@project)
+    redirect_to trash_dmsf_path(@project)
   end
 
   def save_root
@@ -345,7 +346,7 @@ class DmsfController < ApplicationController
       end
       flash[:notice] = l(:notice_folder_notifications_activated)
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def notify_deactivate
@@ -360,7 +361,7 @@ class DmsfController < ApplicationController
       end
       flash[:notice] = l(:notice_folder_notifications_deactivated)
     end
-    redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+    redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def lock
@@ -372,7 +373,7 @@ class DmsfController < ApplicationController
       @folder.lock!
       flash[:notice] = l(:notice_folder_locked)
     end
-      redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+      redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def unlock
@@ -388,7 +389,7 @@ class DmsfController < ApplicationController
         flash[:error] = l(:error_only_user_that_locked_folder_can_unlock_it)
       end
     end
-     redirect_back_or_default dmsf_folder_path(id: @project.id, folder_id: @folder)
+     redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def add_email
@@ -478,7 +479,7 @@ class DmsfController < ApplicationController
         link&.delete true
       end
     end
-    redirect_back_or_default trash_dmsf_path(id: @project.id)
+    redirect_back_or_default trash_dmsf_path(id: @project)
   end
 
   private
@@ -515,6 +516,7 @@ class DmsfController < ApplicationController
         "#{User.current.name} <#{User.current.mail}>",
       reply_to: Setting.plugin_redmine_dmsf['dmsf_documents_email_reply_to']
     }
+    @back_url = params[:back_url]
     render action: 'email_entries'
   rescue Exception
     raise
