@@ -21,7 +21,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-Redmine::Plugin.register :redmine_dmsf do
+Redmine::Plugin.register :redmine_dmsf doq
   if Redmine::Plugin.installed?(:easy_extensions)
     name 'Easy DMS'
     url 'https://www.easyredmine.com'
@@ -33,7 +33,7 @@ Redmine::Plugin.register :redmine_dmsf do
   end
   author 'Vít Jonáš / Daniel Munn / Karel Pičman'
   description 'Document Management System Features'
-  version '2.4.12 devel'
+  version '2.4.11'
   
   requires_redmine version_or_higher: '4.2.0'
 
