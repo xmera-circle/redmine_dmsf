@@ -82,7 +82,7 @@ class DmsfFileRevision < ActiveRecord::Base
   # always custom field values since they are not restricted to roles
   # when defined.
   def visible?
-    true
+    deleted == STATUS_ACTIVE
   end
 
   def project
