@@ -37,6 +37,10 @@ class DmsfFileRevisionTest < RedmineDmsf::Test::UnitTest
     @wf1 = DmsfWorkflow.find 1
   end
 
+  def test_should_respond_to_visible
+    assert @revision1.respond_to? :visible?
+  end
+
   def test_delete_restore
     @revision5.delete false
     assert @revision5.deleted?,

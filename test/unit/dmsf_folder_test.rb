@@ -31,7 +31,11 @@ class DmsfFolderTest < RedmineDmsf::Test::UnitTest
     super
     @link2 = DmsfLink.find 2
   end
-         
+
+  def test_should_respond_to_visible
+    assert @folder1.respond_to? :visible?
+  end
+
   def test_visiblity
     # The role has got permissions
     User.current = @jsmith

@@ -78,6 +78,13 @@ class DmsfFileRevision < ActiveRecord::Base
   validates :description, length: { maximum: 1.kilobyte }
   validates :size, dmsf_max_file_size: true
 
+  # Required for application helper format object in order to return
+  # always custom field values since they are not restricted to roles
+  # when defined.
+  def visible?
+    true
+  end
+
   def project
     dmsf_file.project if dmsf_file
   end

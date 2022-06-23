@@ -100,6 +100,13 @@ class DmsfFolder < ActiveRecord::Base
 
   before_create :default_values
 
+  # Required for application helper format object in order to return
+  # always custom field values since they are not restricted to roles
+  # when defined.
+  def visible?
+    true
+  end
+
   def self.permissions?(folder, allow_system = true)
     # Administrator?
     return true if (User.current.admin? || folder.nil?)
