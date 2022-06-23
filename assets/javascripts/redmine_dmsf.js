@@ -142,7 +142,7 @@ function dmsfExpandRows(project_id, folder_id, parentRow, url) {
       }
       else {
         // Add child rows
-        eval(data);
+        return Function('"use strict";' + data)();
       }
   })
   .fail(function() {
