@@ -78,10 +78,12 @@ class DmsfFilesControllerTest < RedmineDmsf::Test::TestCase
   end
 
   def test_view_preview
-    get :view, params: { id: @file13.id }
-    assert_response :success
-    assert_equal 'application/pdf', @response.media_type
-    assert @response.body.starts_with?('%PDF')
+    if RedmineDmsf::Preview.office_available?
+      get :view, params: { id: @file13.id }
+      assert_response :success
+      assert_equal 'application/pdf', @response.media_type
+      assert @response.body.starts_with?('%PDF')
+    end
   end
 
   def delete_forbidden

@@ -79,9 +79,11 @@ class MyControllerTest < RedmineDmsf::Test::TestCase
     @folder1.add_watcher @jsmith
     @project1.add_watcher @jsmith
     get :page
-    assert_response :success
-    assert_select 'div#list-top' do
-      assert_select 'h3', { text: "#{l(:label_dmsf_watched)} (2/1)" }
+    unless defined?(EasyExtensions)
+      assert_response :success
+      assert_select 'div#list-top' do
+        assert_select 'h3', { text: "#{l(:label_dmsf_watched)} (2/1)" }
+      end
     end
   end
 
