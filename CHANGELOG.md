@@ -1,8 +1,10 @@
 Changelog for Redmine DMSF
 ==========================
 
-3.0.13 ????-??-??
+3.0.12-xmr unreleased
 ------------------
+
+* New: Updates German translations
 
 3.0.12 2023-03-15
 ------------------

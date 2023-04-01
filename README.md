@@ -1,5 +1,5 @@
-Redmine DMSF Plugin 3.0.13 devel
-================================
+Redmine DMSF Plugin 3.0.12-xmr
+==============================
 
 [![GitHub CI](https://github.com/danmunn/redmine_dmsf/actions/workflows/rubyonrails.yml/badge.svg?branch=devel)](https://github.com/danmunn/redmine_dmsf/actions/workflows/rubyonrails.yml)
 [![Support Ukraine Badge](https://bit.ly/support-ukraine-now)](https://github.com/support-ukraine/support-ukraine)
