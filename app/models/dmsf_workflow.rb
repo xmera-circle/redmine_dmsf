@@ -19,15 +19,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-class DmsfWorkflow < ActiveRecord::Base
-<<<<<<< HEAD
-  
-  
-  has_many :dmsf_workflow_steps, -> { order(step: :asc, operator: :desc) }, dependent: :destroy
-=======
-
+class DmsfWorkflow < ActiveRecord::Base 
   has_many :dmsf_workflow_steps, -> { order(step: :asc) }, dependent: :destroy
->>>>>>> release-3.0.12-xmr
   belongs_to :author, class_name: 'User'
 
   scope :sorted, lambda { order(name: :asc) }
