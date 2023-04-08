@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -141,7 +141,7 @@ class DmsfWebdavOptionsTest < RedmineDmsf::Test::IntegrationTest
   end
 
   def test_options_for_subproject
-    process :options, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}", params: nil, headers: @admin
+    process :options, "/dmsf/webdav/#{@project1.identifier}/#{@project5.identifier}", params: nil, headers: @admin
     assert_response :success
   end
 

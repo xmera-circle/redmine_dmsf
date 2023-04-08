@@ -2,7 +2,7 @@
 * Redmine plugin for Document Management System "Features"
 *
 * Copyright © 2011    Vit Jonas <vit.jonas@gmail.com>
-* Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+* Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -54,9 +54,22 @@
 }
 
 /* Approval workflow */
-#dmsf_users_for_delegate { height: 200px; overflow:auto; }
-#dmsf_users_for_delegate label { display: block; }
-.dmsf-workflows.locked a { color: #aaa; }
+#dmsf_users_for_delegate {
+    height: 200px;
+    overflow:auto;
+}
+
+#dmsf_users_for_delegate label {
+    display: block;
+}
+
+.dmsf-workflows.locked a {
+    color: #aaa;
+}
+
+div[id^="step-index-"] {
+    display: none;
+}
 
 /* DMSF revision box */
 #new_revision_form_content {
@@ -251,6 +264,11 @@ div[id*="revision_access_"] {
 }
 
 /* DMSF file upload */
+
+span.fileover {
+    background-color: lavender;
+}
+
 .dmsf-uploader {
     padding:10px;
     margin-bottom: 20px;
@@ -372,4 +390,9 @@ div.dmsf-scroll {
 [id^='email_'].dmsf-full-width  {
     width: 90%;
     max-width: 90%;
+}
+
+/* Wiki toolbar */
+.jstb_dmsf {
+    background-image: url('../images/jstoolbar/bt_dmsf.png');
 }

@@ -1,6 +1,6 @@
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,17 +18,20 @@
 
 module RedmineDmsf
   module Hooks
+    module Views
 
-    class ViewSearchFormHook < Redmine::Hook::ViewListener
+      class SearchViewHooks < Redmine::Hook::ViewListener
 
-      def view_search_index_container(context={})
-        if context[:object].is_a?(DmsfFile) || context[:object].is_a?(DmsfFolder)
-          str = context[:controller].send(:render_to_string, partial: 'search/container',
-            locals: { object: context[:object] })
-          if str
-            " #{str} /"
+        def view_search_index_container(context={})
+          if context[:object].is_a?(DmsfFile) || context[:object].is_a?(DmsfFolder)
+            str = context[:controller].send(:render_to_string, partial: 'search/container',
+              locals: { object: context[:object] })
+            if str
+              " #{str} /"
+            end
           end
         end
+
       end
 
     end

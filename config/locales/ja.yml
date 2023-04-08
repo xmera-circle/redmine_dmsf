@@ -3,7 +3,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011  Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 #
 # This program is free software; you can redistribute it and/or
@@ -121,6 +121,7 @@ ja:
   label_size: サイズ
   heading_new_revision: 新しいリビジョン
   option_version_same: 変更なし
+  option_version_patch: Patch
   option_version_minor: マイナー
   option_version_major: メジャー
   option_version_custom: カスタム
@@ -340,6 +341,7 @@ ja:
 
   locked_documents: ロック中
   open_approvals: 未承認
+  watched_documents: Watched documents
 
   error_maximum_upload_filecount: 一度にアップロードできるファイルは %{files} つまでです。
 
@@ -377,10 +379,6 @@ ja:
   label_dmsf_attachments: DMS 添付ファイル
   label_basic_attachments: 標準 添付ファイル
 
-  label_tmpdir: 一時フォルダのパス
-  error_file_tmpdir_does_not_exist: 指定された一時フォルダが存在せず、作成もできません
-  error_tmpfile_can_not_be_created: 指定された一時フォルダにファイルを作成できません
-
   label_email_from_override: 差出人
   text_email_from_override: 現在ログインしているユーザー
   label_email_reply_to: 返信先
@@ -392,20 +390,22 @@ ja:
     e.g: XAPIAN_CJK_NGRAM=true ruby plugins/redmine_dmsf/extra/xapian_indexer.rb -fv"
 
   label_dmsf_fast_links: 高速リンク
-  text_dmsf_fast_links_info: ターゲットフォルダのIDを手動で入力することで、リンク作成時のプロセスを高速化することができます。
+  text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links or moving files
+    or folders in order to speed up the process of creating links.
 
 
   label_dmsf_permissions: Allow access only to
   label_inherited_permissions: Inherited Access for
 
   button_edit_content: Edit content
-  field_workflow: Workflow
+  field_workflow: ワークフロー
   field_modified: Date
   field_updated: Date
   field_count: D/L
   field_first_at: First
   field_last_at: Last
-  field_size: Size
+  field_size: サイズ
+  field_locked: Locked
 
   label_add_width: Add with
 
@@ -424,6 +424,52 @@ ja:
   title_assignment_minor: Assignment not allowed, minor must be zero
   title_start_minor: Start not allowed, minor must be zero
   title_approval_minor: Approval not allowed, minor must be zero
+
+  label_project_watchers: Watchers
+  label_dmsf_folder_watchers: Watchers
+  label_dmsf_file_watchers: Watchers
+  label_dmsf_watched: Watched documents
+  dmsf_legacy_notifications: Legacy DMS notifications
+  permission_view_dmsf_folder_watchers: View folder's watchers
+  permission_add_dmsf_folder_watchers: Add folder's watchers
+  permission_delete_dmsf_folder_watchers: Delete folder's watchers
+  permission_view_dmsf_file_watchers: View document's watchers
+  permission_add_dmsf_file_watchers: Add document's watchers
+  permission_delete_dmsf_file_watchers: Delete document's watchers
+  permission_view_project_watchers: View project's watchers
+  permission_add_project_watchers: Add project's watchers
+  permission_delete_project_watchers: Delete project's watchers
+  label_dmsf_new_top_level_document: New top level DMS document
+  label_dmsf_new_top_level_folder: New top level DMS folder
+
+  label_dmsf_max_notification_receivers_info: Maximum notification receivers info
+  note_dmsf_max_notification_receivers_info: Limits maximum number of displayed email notification receivers.
+  label_dmsf_office_bin: Libreoffice binary
+  note_dmsf_office_bin: A binary to convert office documents to PDF format and provide their preview. If you want
+    to prevent previews of office documents, put an empty string here. After a change, you might have to restart the
+    application to take it any effect.
+  note_dmsf_office_bin_not_available: "LibreOffice's command line binary '%{value}' not available"
+
+  label_dmsf_columns: DMS Columns
+  label_column_id: ID
+  label_column_title: タイトル
+  label_column_size: サイズ
+  label_column_modified: 変更
+  label_column_version: バージョン
+  label_column_workflow: ワークフロー
+  label_column_author: 作成者
+  label_column_description: 説明
+  label_column_comment: コメント
+
+  label_dmsf_global_menu_disabled: Global DMS menu disabled
+  note_dmsf_global_menu_disabled: If yes, DMS menu item is not present in the top menu.
+  error_dmsf_workflow_assigned: Approval workflow in use can be neither edited nor deleted.
+
+  label_empty_minor_version_by_default: Empty minor version by default
+  text_email_doc_downloaded_subject: Documents downloaded
+  text_email_doc_downloaded: has just downloaded documents of
+  field_default_dmsf_query: Default DMS query
+  field_receive_download_notification: Receive download notifications
 
   easy_pages:
     modules:

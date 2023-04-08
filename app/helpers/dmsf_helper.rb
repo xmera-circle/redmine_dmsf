@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,25 +21,23 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require 'tmpdir'
-require 'digest'
 require 'csv'
 
 module DmsfHelper
   include Redmine::I18n
 
-  def self.temp_dir
-    if Setting.plugin_redmine_dmsf['dmsf_tmpdir'].present?
-      tmpdir = Pathname.new(Setting.plugin_redmine_dmsf['dmsf_tmpdir'])
-    else
-      tmpdir = Pathname.new(Dir.tmpdir)
+  unless Redmine::Plugin.installed?(:easy_extensions)
+
+    def late_javascript_tag(content_or_options_with_block = nil, html_options = {}, &block)
+      javascript_tag content_or_options_with_block, html_options, &block
     end
-    tmpdir
+
   end
 
   def self.temp_filename(filename)
     filename = sanitize_filename(filename)
     timestamp = DateTime.current.strftime('%y%m%d%H%M%S')
-    while temp_dir.join("#{timestamp}_#{filename}").exist?
+    while File.exist?(File.join(Rails.root, 'tmp', "#{timestamp}_#{filename}"))
       timestamp.succ!
     end
     "#{timestamp}_#{filename}"

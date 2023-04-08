@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ module RedmineDmsf
       attr_reader :files
 
       def initialize
-        @temp_file = Tempfile.new(%w(dmsf_zip_ .zip), DmsfHelper.temp_dir)
+        @temp_file = Tempfile.new(%w(dmsf_zip_ .zip), File.join(Rails.root, 'tmp'))
         @zip_file = ::Zip::OutputStream.open(@temp_file)
         @files = []
         @folders = []
@@ -48,7 +48,7 @@ module RedmineDmsf
       def add_file(file, member, root_path = nil)
         unless @files.include?(file)
           unless file && file.last_revision && File.exist?(file.last_revision.disk_file)
-            raise FileNotFound
+            raise RedmineDmsf::Errors::DmsfFileNotFoundError
           end
           string_path = file.dmsf_folder.nil? ? '' : (file.dmsf_folder.dmsf_path_str + File::SEPARATOR)
           string_path = string_path[(root_path.length + 1) .. string_path.length] if root_path

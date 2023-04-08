@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -31,9 +31,15 @@ class DmsfFilesCopyController < ApplicationController
 
   accept_api_auth :copy, :move
 
+  helper :dmsf
+
   def new
-    @projects = DmsfFile.allowed_target_projects_on_copy
-    @folders = DmsfFolder.directory_tree(@target_project, @folder)
+    member = Member.find_by(project_id: @project.id, user_id: User.current.id)
+    @fast_links = member && member.dmsf_fast_links
+    unless @fast_links
+      @projects = DmsfFile.allowed_target_projects_on_copy
+      @folders = DmsfFolder.directory_tree(@target_project, @folder)
+    end
     @back_url = params[:back_url]
     render layout: !request.xhr?
   end
@@ -86,11 +92,11 @@ private
   def find_file
     raise ActiveRecord::RecordNotFound unless DmsfFile.where(id: params[:id]).exists?
     @file = DmsfFile.visible.find params[:id]
-    raise DmsfAccessError if @file.locked_for_user?
+    raise RedmineDmsf::Errors::DmsfAccessError if @file.locked_for_user?
     @project = @file.project
   rescue ActiveRecord::RecordNotFound
     render_404
-  rescue DmsfAccessError
+  rescue RedmineDmsf::Errors::DmsfAccessError
     render_403
   end
 
@@ -105,6 +111,8 @@ private
       target_project_id = params[:target_project_id]
     elsif params[:dmsf_file_or_folder] && params[:dmsf_file_or_folder][:target_project_id].present?
       target_project_id = params[:dmsf_file_or_folder][:target_project_id]
+    else
+      target_project_id = @target_folder&.project_id
     end
     @target_project = target_project_id ? Project.visible.find(target_project_id) : @project
   rescue ActiveRecord::RecordNotFound
@@ -120,9 +128,9 @@ private
     end
     if (@target_folder && (@target_folder.locked_for_user? || !DmsfFolder.permissions?(@target_folder,
      false))) || !@target_project.allows_to?(:file_manipulation)
-      raise DmsfAccessError
+      raise RedmineDmsf::Errors::DmsfAccessError
     end
-  rescue DmsfAccessError
+  rescue RedmineDmsf::Errors::DmsfAccessError
     render_403
   end
 

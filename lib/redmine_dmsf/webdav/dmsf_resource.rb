@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -98,8 +98,12 @@ module RedmineDmsf
       # Return the content type of file
       # will return inode/directory for any collections, and appropriate for File entities
       def content_type
-        if file&.last_revision
-          file.last_revision.detect_content_type
+        if file
+          if file.last_revision
+            file.last_revision.detect_content_type
+          else
+            'application/octet-stream'
+          end
         else
           'inode/directory'
         end
@@ -118,8 +122,12 @@ module RedmineDmsf
       def last_modified
         if folder
           folder.updated_at
-        elsif file&.last_revision
-          file.last_revision.updated_at
+        elsif file
+          if file.last_revision
+            file.last_revision.updated_at
+          else
+            file.updated_at
+          end
         else
           raise NotFound
         end
@@ -194,7 +202,7 @@ module RedmineDmsf
           if pattern.present? && basename.match(pattern)
             # Files that are not versioned should be destroyed
             destroy = true
-          elsif file.last_revision.size == 0
+          elsif (!file.last_revision) || file.last_revision.size == 0
             # Zero-sized files should be destroyed
             destroy = true
           else
@@ -208,7 +216,7 @@ module RedmineDmsf
           end
         elsif folder
           raise Locked if folder.locked?
-          # To fullfil Litmus requirements to not delete folder if fragments are in the URL
+          # To fulfill Litmus requirements to not delete folder if fragments are in the URL
           uri = URI(uri_encode(request.get_header('REQUEST_URI')))
           raise BadRequest if uri.fragment.present?
           raise Forbidden unless User.current.admin? || User.current.allowed_to?(:folder_manipulation, project)
@@ -267,7 +275,7 @@ module RedmineDmsf
             else
               # Create a new revison by cloning the last revision in the destination
               new_revision = dest.resource.file.last_revision.clone
-              new_revision.increase_version 1
+              new_revision.increase_version DmsfFileRevision::PATCH_VERSION
             end
             # The file on disk must be renamed from .tmp to the correct filetype or else Xapian won't know how to index.
             # Copy file.last_revision.disk_file to new_revision.disk_file
@@ -421,17 +429,30 @@ module RedmineDmsf
       # Lock
       def lock(args)
         unless parent&.exist?
-          e = DAV4Rack::LockFailure.new
+          e = Dav4rack::LockFailure.new
           e.add_failure @path, Conflict
           raise e
         end
         unless exist?
-          return super(args)
+          # A successful lock request to an unmapped URL MUST result in the creation of a locked (non-collection)
+          # resource with empty content.
+          f = create_empty_file
+          if f
+            scope = "scope_#{(args[:scope] || 'exclusive')}".to_sym
+            type = "type_#{(args[:type] || 'write')}".to_sym
+            l = f.lock!(scope, type, Time.current + 1.weeks, args[:owner])
+            @response['Lock-Token'] = l.uuid
+            return [1.week.to_i, l.uuid]
+          else
+            e = Dav4rack::LockFailure.new
+            e.add_failure @path, NotFound
+            raise e
+          end
         end
         lock_check args
         entity = file || folder
         unless entity
-          e = DAV4Rack::LockFailure.new
+          e = Dav4rack::LockFailure.new
           e.add_failure @path, MethodNotAllowed
           raise e
         end
@@ -444,7 +465,7 @@ module RedmineDmsf
           if refresh
             http_if = request.get_header('HTTP_IF')
             if http_if.blank?
-              e = DAV4Rack::LockFailure.new
+              e = Dav4rack::LockFailure.new
               e.add_failure @path, Conflict
               raise e
             end
@@ -453,7 +474,7 @@ module RedmineDmsf
               l = DmsfLock.find_by(uuid: $1)
             end
             unless l
-              e = DAV4Rack::LockFailure.new
+              e = Dav4rack::LockFailure.new
               e.add_failure @path, Conflict
               raise e
             end
@@ -468,8 +489,8 @@ module RedmineDmsf
           l = entity.lock!(scope, type, Time.current + 1.weeks, args[:owner])
           @response['Lock-Token'] = l.uuid
           [1.week.to_i, l.uuid]
-        rescue DmsfLockError => exception
-          e = DAV4Rack::LockFailure.new(exception.message)
+        rescue RedmineDmsf::Errors::DmsfLockError => exception
+          e = Dav4rack::LockFailure.new(exception.message)
           e.add_failure @path, Conflict
           raise e
         end
@@ -554,6 +575,15 @@ module RedmineDmsf
               new_revision.custom_field_values[i].value = custom_value
             end
           end
+          unless reuse_revision
+            if new_revision.patch_version && (new_revision.patch_version != -32)
+              new_revision.increase_version(DmsfFileRevision::PATCH_VERSION)
+            elsif new_revision.minor_version && (new_revision.minor_version != -32)
+              new_revision.increase_version(DmsfFileRevision::MINOR_VERSION)
+            else
+              new_revision.increase_version(DmsfFileRevision::MAJOR_VERSION)
+            end
+          end
         else
           f = DmsfFile.new
           f.project_id = project.id
@@ -561,7 +591,7 @@ module RedmineDmsf
           f.dmsf_folder = parent.folder
           f.notification = !Setting.plugin_redmine_dmsf['dmsf_default_notifications'].blank?
           new_revision = DmsfFileRevision.new
-          new_revision.minor_version = 0
+          new_revision.minor_version = 1
           new_revision.major_version = 0
           new_revision.title = DmsfFileRevision.filename_to_title(basename)
         end
@@ -569,7 +599,6 @@ module RedmineDmsf
         new_revision.dmsf_file = f
         new_revision.user = User.current
         new_revision.name = basename
-        new_revision.increase_version(1) unless reuse_revision
         new_revision.mime_type = Redmine::MimeType.of(new_revision.name)
 
         # Phusion passenger does not have a method "length" in its model
@@ -603,16 +632,6 @@ module RedmineDmsf
 
         if new_revision.save
           new_revision.copy_file_content request.body
-          # Digest
-          sha = Digest::SHA256.new
-          if request.body.respond_to?(:read)
-            while (buffer = request.body.read(8192))
-              sha.update buffer
-            end
-          else
-            sha.update request.body
-          end
-          new_revision.digest = sha.hexdigest
           new_revision.save
           # Notifications
           DmsfMailer.deliver_files_updated project, [f]
@@ -680,7 +699,7 @@ module RedmineDmsf
       # Prepare file for download using Rack functionality:
       # Download (see RedmineDmsf::Webdav::Download) extends Rack::File to allow single-file
       # implementation of service for request, which allows for us to pipe a single file through
-      # also best-utilising DAV4Rack's implementation.
+      # also best-utilising Dav4rack's implementation.
       def download
         raise NotFound unless file&.last_revision
         disk_file = file.last_revision.disk_file
@@ -689,11 +708,18 @@ module RedmineDmsf
         # If there is no range (start of ranged download, or direct download) then we log the
         # file access, so we can properly keep logged information
         if @request.env['HTTP_RANGE'].nil?
+          # Action
           access = DmsfFileRevisionAccess.new
           access.user = User.current
           access.dmsf_file_revision = file.last_revision
           access.action = DmsfFileRevisionAccess::DownloadAction
           access.save!
+          # Notification
+          begin
+            DmsfMailer.deliver_files_downloaded(@project, [file], @request.env['REMOTE_IP'])
+          rescue => e
+            Rails.logger.error "Could not send email notifications: #{e.message}"
+          end
         end
         File.new disk_file
       end
@@ -736,6 +762,36 @@ module RedmineDmsf
         else
           return "Project-#{project.id}"
         end
+      end
+
+      def create_empty_file
+        f = DmsfFile.new
+        f.project_id = project.id
+        f.name = basename
+        f.dmsf_folder = parent.folder
+        if f.save(validate: false)  # Skip validation due to invalid characters in the filename
+          r = DmsfFileRevision.new
+          r.minor_version = 1
+          r.major_version = 0
+          r.title = DmsfFileRevision.filename_to_title(basename)
+          r.dmsf_file = f
+          r.user = User.current
+          r.name = basename
+          r.mime_type = Redmine::MimeType.of(r.name)
+          r.size = 0
+          r.digest = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+          r.disk_filename = r.new_storage_filename
+          r.available_custom_fields.each do |cf|  # Add default value for CFs not existing
+            if cf.default_value
+              r.custom_field_values << CustomValue.new({ custom_field: cf, value: cf.default_value})
+            end
+          end
+          if r.save(validate: false)  # Skip validation due to invalid characters in the filename
+            FileUtils.touch r.disk_file(false)
+            return f
+          end
+        end
+        nil
       end
       
     end

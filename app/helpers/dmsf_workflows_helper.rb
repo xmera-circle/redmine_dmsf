@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -98,22 +98,6 @@ module DmsfWorkflowsHelper
       s << "<label>#{ radio_button_tag name, principal.id * 10, false, onclick: 'noteMandatory(true);', id: nil } #{h principal}</label>\n"
     end
     s.html_safe
-  end
-
-  def change_status_link(workflow)
-    url = { controller: 'dmsf_workflows', action: 'update', id: workflow.id }
-    if workflow.locked?
-      link_to l(:button_unlock), url.merge(dmsf_workflow: { status: DmsfWorkflow::STATUS_ACTIVE }), method: :put, class: 'icon icon-unlock'
-    else
-      link_to l(:button_lock), url.merge(dmsf_workflow: { status: DmsfWorkflow::STATUS_LOCKED }), method: :put, class: 'icon icon-lock'
-    end
-  end
-
-  def workflows_status_options_for_select(selected)
-    worflows_count_by_status = DmsfWorkflow.global.group('status').count.to_hash
-    options_for_select([[l(:label_all), ''],
-      ["#{l(:status_active)} (#{worflows_count_by_status[DmsfWorkflow::STATUS_ACTIVE].to_i})", DmsfWorkflow::STATUS_ACTIVE.to_s],
-      ["#{l(:status_locked)} (#{worflows_count_by_status[DmsfWorkflow::STATUS_LOCKED].to_i})", DmsfWorkflow::STATUS_LOCKED.to_s]], selected.to_s)
   end
 
 end

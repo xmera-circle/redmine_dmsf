@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,6 +30,11 @@ class DmsfFilesControllerTest < RedmineDmsf::Test::TestCase
     @request.session[:user_id] = @jsmith.id
   end
 
+  def teardown
+    super
+    DmsfFile.clear_previews
+  end
+
   def test_show_file_ok
     # Permissions OK
     get :show, params: { id: @file1.id }
@@ -41,14 +46,14 @@ class DmsfFilesControllerTest < RedmineDmsf::Test::TestCase
     get :show, params: { id: @file1.id }
     assert_response :success
     assert_include 'dmsf-description', response.body, 'dmsf-description class not found'
-    assert_not_include 'wiki-edit', response.body, 'wiki-edit class found'
+    assert_include 'wiki-edit', response.body, 'wiki-edit class not found'
   end
 
   def test_show_formatting_textile
     Setting.text_formatting = 'Textile'
     get :show, params: { id: @file1.id }
     assert_response :success
-    assert_not_include 'dmsf-description', response.body, 'dmsf-description class found'
+    assert_include 'dmsf-description', response.body, 'dmsf-description class not found'
     assert_include 'wiki-edit', response.body, 'wiki-edit class not found'
   end
 
@@ -70,6 +75,15 @@ class DmsfFilesControllerTest < RedmineDmsf::Test::TestCase
     @role_manager.remove_permission! :view_dmsf_files
     get :view, params: { id: @file1.id }
     assert_response :forbidden
+  end
+
+  def test_view_preview
+    if RedmineDmsf::Preview.office_available?
+      get :view, params: { id: @file13.id }
+      assert_response :success
+      assert_equal 'application/pdf', @response.media_type
+      assert @response.body.starts_with?('%PDF')
+    end
   end
 
   def delete_forbidden
@@ -106,6 +120,25 @@ class DmsfFilesControllerTest < RedmineDmsf::Test::TestCase
     @role_manager.remove_permission! :file_manipulation
     get :obsolete_revision, params: { id: @file1.last_revision.id }
     assert :forbiden
+  end
+
+  def test_create_revision
+    assert_difference 'DmsfFileRevision.count', +1 do
+      post :create_revision,
+        params: {
+          id: @file1.id,
+          version_major: @file1.last_revision.major_version,
+          version_minor: @file1.last_revision.minor_version + 1,
+          dmsf_file_revision: {
+            title: @file1.last_revision.title,
+            name: @file1.last_revision.name,
+            description: @file1.last_revision.description,
+            comment: 'New revision'
+          }
+      }
+    end
+    assert_redirected_to dmsf_folder_path(id: @file1.project)
+    assert_not_nil @file1.last_revision.digest
   end
   
 end

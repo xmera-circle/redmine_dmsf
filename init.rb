@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,20 +22,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 Redmine::Plugin.register :redmine_dmsf do
-  if Redmine::Plugin.installed?(:easy_extensions)
-    name 'Easy DMS'
-    url 'https://www.easyredmine.com'
-    author_url 'https://www.easyredmine.com'
-  else
-    name 'DMSF'
-    url 'https://www.redmine.org/plugins/redmine_dmsf'
-    author_url 'https://github.com/danmunn/redmine_dmsf/graphs/contributors'
-  end
+  name 'DMSF'
+  url 'https://www.redmine.org/plugins/redmine_dmsf'
+  author_url 'https://github.com/danmunn/redmine_dmsf/graphs/contributors'
   author 'Vít Jonáš / Daniel Munn / Karel Pičman'
   description 'Document Management System Features'
-  version '2.4.12 devel'
-  
-  requires_redmine version_or_higher: '4.2.0'
+  version '3.0.12-xmr-1'
+
+  requires_redmine version_or_higher: '5.0.0'
 
   settings partial: 'settings/dmsf_settings',
             default: {
@@ -53,7 +47,6 @@ Redmine::Plugin.register :redmine_dmsf do
               'dmsf_webdav_disable_versioning' => '^\~\$|\.tmp$',
               'dmsf_keep_documents_locked' => nil,
               'dmsf_act_as_attachable' => nil,
-              'dmsf_tmpdir' => Dir.tmpdir,
               'dmsf_documents_email_from' => '',
               'dmsf_documents_email_reply_to' => '',
               'dmsf_documents_email_links_only' => nil,
@@ -61,7 +54,12 @@ Redmine::Plugin.register :redmine_dmsf do
               'dmsf_webdav_use_project_names' => Redmine::Plugin.installed?(:easy_extensions) ? '1' : nil,
               'dmsf_webdav_ignore_1b_file_for_authentication' => '1',
               'dmsf_projects_as_subfolders' =>  nil,
-              'only_approval_zero_minor_version' => '0'
+              'only_approval_zero_minor_version' => '0',
+              'dmsf_max_notification_receivers_info' => 10,
+              'office_bin' => 'libreoffice',
+              'dmsf_global_menu_disabled' => nil,
+              'dmsf_default_query' => nil,
+              'empty_minor_version_by_default' => nil
             }
 end
 

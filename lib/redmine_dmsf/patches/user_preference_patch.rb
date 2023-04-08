@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,16 +21,12 @@
 
 module RedmineDmsf
   module Patches
-    module UserPreference
+    module UserPreferencePatch
 
       ##################################################################################################################
       # New methods
 
-      def self.included(base)
-        base.class_eval do
-          safe_attributes 'dmsf_attachments_upload_choice' if self.included_modules.include?(Redmine::SafeAttributes)
-        end
-      end
+      UserPreference::safe_attributes 'dmsf_attachments_upload_choice'
 
       def dmsf_attachments_upload_choice
         self[:dmsf_attachments_upload_choice] || 'DMSF'
@@ -40,10 +36,34 @@ module RedmineDmsf
         self[:dmsf_attachments_upload_choice] = value
       end
 
+      UserPreference::safe_attributes 'default_dmsf_query'
+
+      def default_dmsf_query
+        self[:default_dmsf_query] || nil
+      end
+
+      def default_dmsf_query=(value)
+        self[:default_dmsf_query] = value
+      end
+
+      UserPreference::safe_attributes 'receive_download_notification'
+
+      def receive_download_notification
+        self[:receive_download_notification] || '0'
+      end
+
+      def receive_download_notification=(value)
+        self[:receive_download_notification] = value
+      end
+
     end
   end
 end
 
-# Apply patch
-RedmineExtensions::PatchManager.register_model_patch 'UserPreference',
-  'RedmineDmsf::Patches::UserPreference'
+# Apply the patch
+if Redmine::Plugin.installed?(:easy_extensions)
+  RedmineExtensions::PatchManager.register_model_patch 'UserPreference',
+  'RedmineDmsf::Patches::UserPreferencePatch'
+else
+  UserPreference.prepend RedmineDmsf::Patches::UserPreferencePatch
+end

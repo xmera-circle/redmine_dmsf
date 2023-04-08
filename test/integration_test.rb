@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -37,8 +37,8 @@ module RedmineDmsf
         @anonymous = credentials('')
         @project1 = Project.find 1
         @project2 = Project.find 2
-        @project3 = Project.find 3
-        [@project1, @project2, @project3].each do |project|
+        @project5 = Project.find 5
+        [@project1, @project2, @project5].each do |project|
           project.enable_module! :dmsf
         end
         @file1 = DmsfFile.find 1

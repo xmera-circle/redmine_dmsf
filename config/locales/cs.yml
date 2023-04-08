@@ -3,7 +3,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 #
 # This program is free software; you can redistribute it and/or
@@ -121,7 +121,8 @@ cs:
   label_size: Velikost
   heading_new_revision: Nová revize
   option_version_same: Stejná
-  option_version_minor: Podružná
+  option_version_patch: Revize
+  option_version_minor: Vedlejší
   option_version_major: Hlavní
   option_version_custom: Vlastní
   label_new_content: Nový obsah
@@ -238,7 +239,7 @@ cs:
   field_label_dmsf_workflow: Schvalovací proces
   field_label_dmsf_workflow_name: Approval workflow name
   label_dmsf_workflow_plural: Schvalovací procesy
-  label_dmsf_workflow_plural_num: Schvalovací procesy (%{count})
+  label_dmsf_workflow_plural_num: Kopírovat schvalovací procesy (%{count})
   label_dmsf_workflow_step: Krok
   label_dmsf_workflow_step_plural: Kroky
   label_dmsf_workflow_approval_plural: Schválení
@@ -340,6 +341,7 @@ cs:
 
   locked_documents: Zamčené dokumenty
   open_approvals: Procesy ke schválení
+  watched_documents: Sledované dokumenty
 
   error_maximum_upload_filecount: "Nelze nahrát více než %{filecount} soubor(ů)."
 
@@ -377,10 +379,6 @@ cs:
   label_dmsf_attachments: DMS přílohy
   label_basic_attachments: Souborové přílohy
 
-  label_tmpdir: Adresář pro dočasné soubory
-  error_file_tmpdir_does_not_exist: Adresář pro dočasné soubory neexistuje a nemůže být vytvořen
-  error_tmpfile_can_not_be_created: Nelze vytvořit soubor v adresáři pro dočasné soubory
-
   label_email_from_override: Od
   text_email_from_override: aktuálně přihlášený uživatel
   label_email_reply_to: Odpovědět komu
@@ -393,7 +391,7 @@ cs:
 
   label_dmsf_fast_links: Rychlé odkazy
   text_dmsf_fast_links_info: Při vytváření odkazů budete moci zadat přímo ID cílového adresáře za účelem zrychlení
-    procesu vytváření odkazů.
+    procesu vytváření odkazů nebo kopírování dokumentů a adresářů.
 
   label_dmsf_permissions: Povolený přístup pro
   label_inherited_permissions: Zděděný přístup pro
@@ -406,6 +404,7 @@ cs:
   field_first_at: První
   field_last_at: Poslední
   field_size: Velikost
+  field_locked: Zamčen
 
   label_add_width: Přidat s
 
@@ -424,6 +423,52 @@ cs:
   title_assignment_minor: Přiřazení není dovoleno, podružná verze musí být nula
   title_start_minor: Zahájení není dovoleno, podružná verze musí být nula
   title_approval_minor: Schválení není dovoleno, podružná verze musí být nula
+
+  label_project_watchers: Sledující uživatelé
+  label_dmsf_folder_watchers: Sledující uživatelé
+  label_dmsf_file_watchers: Sledující uživatelé
+  label_dmsf_watched: Sledované dokumenty
+  dmsf_legacy_notifications: Původní DMS notifikace
+  permission_view_dmsf_folder_watchers: Zobrazit sledující složky
+  permission_add_dmsf_folder_watchers: Přidat sledujícího složky
+  permission_delete_dmsf_folder_watchers: Smazat sledující složky
+  permission_view_dmsf_file_watchers: Zobrazit sledující dokumentu
+  permission_add_dmsf_file_watchers: Přidat sledujícího dokumentu
+  permission_delete_dmsf_file_watchers: Smazat sledující dokumentu
+  permission_view_project_watchers: Zobrazit sledující projektu
+  permission_add_project_watchers: Přidat sledujícího projektu
+  permission_delete_project_watchers: Smazat sledující projektu
+  label_dmsf_new_top_level_document: Nový kořenový DMS dokument
+  label_dmsf_new_top_level_folder: Nová kořenová DMS složka
+
+  label_dmsf_max_notification_receivers_info: Maximální počet zobrazených příjemců notifikace
+  note_dmsf_max_notification_receivers_info: Omezí maximální počet zobrazených příjemců e-mailové notifikace
+  label_dmsf_office_bin: Binárka Libreofficu
+  note_dmsf_office_bin: Binárka ke konverzi kancelářských dokumentů do formátu PDF k poskytnutí jejich náhledu. Jestliže
+    náhledy nechcete, vložte sem prázdný řetězec. Při změně budete muset, pravděpodobně, 
+    restartovat aplikaci.
+  note_dmsf_office_bin_not_available: "Příkaz LibreOfficu pro příkazovou řádku '%{value}' není k dispozici"
+
+  label_dmsf_columns: DMS sloupce
+  label_column_id: ID
+  label_column_title: Název
+  label_column_size: Velikost
+  label_column_modified: Změněno
+  label_column_version: Verze
+  label_column_workflow: Schvalování
+  label_column_author: Autor
+  label_column_description: Popis
+  label_column_comment: Komentář
+
+  label_dmsf_global_menu_disabled: Globální DMS menu zakázáno
+  note_dmsf_global_menu_disabled: Pokud je zašrtnuto, tak položka DMS není v hlavním menu.
+  error_dmsf_workflow_assigned: Použitý schvalovací proces nemůže být ani upraven ani smazán.
+
+  label_empty_minor_version_by_default: Prázdná vedlejší verze jako výchozí
+  text_email_doc_downloaded_subject: Stažení dokumentů
+  text_email_doc_downloaded: právě stáhl dokumety projektu
+  field_default_dmsf_query: Výchozí dotaz DMS
+  field_receive_download_notification: Dostávat notifikace o stažení
 
   easy_pages:
     modules:

@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -36,7 +36,6 @@ class DmsfController < ApplicationController
   before_action :find_folder_by_title, only: [:show]
   before_action :get_query, only: [:expand_folder, :show, :trash, :empty_trash, :index]
   before_action :get_project_roles, only: [:new, :edit, :create, :save]
-  before_action :text_formating, only: [:show, :edit, :edit_root]
 
   accept_api_auth :show, :create, :save, :delete
 
@@ -47,6 +46,7 @@ class DmsfController < ApplicationController
   helper :dmsf_queries
   include DmsfQueriesHelper
   helper :context_menus
+  helper :watchers
 
   def permissions
     if !DmsfFolder.permissions?(@folder, false)
@@ -81,6 +81,7 @@ class DmsfController < ApplicationController
     @folder_manipulation_allowed = User.current.allowed_to?(:folder_manipulation, @project)
     @file_manipulation_allowed = User.current.allowed_to?(:file_manipulation, @project)
     @trash_enabled = @folder_manipulation_allowed && @file_manipulation_allowed
+    @notifications = Setting.notified_events.include?('dmsf_legacy_notifications')
     @query.dmsf_folder_id = @folder ? @folder.id : nil
     @query.deleted = false
     @query.sub_projects |= Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'].present?
@@ -191,9 +192,9 @@ class DmsfController < ApplicationController
       else
         download_entries(selected_folders, selected_files)
       end
-    rescue FileNotFound
+    rescue RedmineDmsf::Errors::DmsfFileNotFoundError
       render_404
-    rescue DmsfAccessError
+    rescue RedmineDmsf::Errors::DmsfAccessError
       render_403
     rescue StandardError => e
       flash[:error] = e.message
@@ -238,6 +239,11 @@ class DmsfController < ApplicationController
     @pathfolder = copy_folder(@folder)
     @force_file_unlock_allowed = User.current.allowed_to?(:force_file_unlock, @project)
     @redirect_to_folder_id = params[:redirect_to_folder_id]
+    @notifications = Setting.notified_events.include?('dmsf_legacy_notifications')
+  end
+
+  def edit_root
+    @notifications = Setting.notified_events.include?('dmsf_legacy_notifications')
   end
 
   def create
@@ -489,22 +495,30 @@ class DmsfController < ApplicationController
   end
 
   def email_entries(selected_folders, selected_files)
-    raise DmsfAccessError unless User.current.allowed_to?(:email_documents, @project)
+    raise RedmineDmsf::Errors::DmsfAccessError unless User.current.allowed_to?(:email_documents, @project)
     zip = Zip.new
     zip_entries(zip, selected_folders, selected_files)
     zipped_content = zip.finish
 
     max_filesize = Setting.plugin_redmine_dmsf['dmsf_max_email_filesize'].to_f
     if max_filesize > 0 && File.size(zipped_content) > max_filesize * 1048576
-      raise EmailMaxFileSize
+      raise RedmineDmsf::Errors::DmsfEmailMaxFileSizeError
     end
 
     zip.files.each do |f|
+      # Action
       audit = DmsfFileRevisionAccess.new
       audit.user = User.current
       audit.dmsf_file_revision = f.last_revision
       audit.action = DmsfFileRevisionAccess::EmailAction
       audit.save!
+    end
+
+    # Notification
+    begin
+      DmsfMailer.deliver_files_downloaded(@project, zip.files, request.remote_ip)
+    rescue => e
+      Rails.logger.error "Could not send email notifications: #{e.message}"
     end
 
     @email_params = {
@@ -528,11 +542,18 @@ class DmsfController < ApplicationController
     zip = Zip.new
     zip_entries(zip, selected_folders, selected_files)
     zip.files.each do |f|
+      # Action
       audit = DmsfFileRevisionAccess.new
       audit.user = User.current
       audit.dmsf_file_revision = f.last_revision
       audit.action = DmsfFileRevisionAccess::DownloadAction
       audit.save!
+    end
+    # Notifications
+    begin
+      DmsfMailer.deliver_files_downloaded(@project, zip.files, request.remote_ip)
+    rescue => e
+      Rails.logger.error "Could not send email notifications: #{e.message}"
     end
     send_file(zip.finish,
       filename: filename_for_content_disposition("#{@project.name}-#{DateTime.current.strftime('%y%m%d%H%M%S')}.zip"),
@@ -551,22 +572,22 @@ class DmsfController < ApplicationController
       if folder
         zip.add_folder(folder, member, (folder.dmsf_folder.dmsf_path_str if folder.dmsf_folder))
       else
-        raise FileNotFound
+        raise RedmineDmsf::Errors::DmsfFileNotFoundError
       end
     end
     selected_files.each do |selected_file_id|
       file = DmsfFile.visible.find_by(id: selected_file_id)
       unless file && file.last_revision && File.exist?(file.last_revision.disk_file)
-        raise FileNotFound
+        raise RedmineDmsf::Errors::DmsfFileNotFoundError
       end
       unless (file.project == @project) || User.current.allowed_to?(:view_dmsf_files, file.project)
-        raise DmsfAccessError
+        raise RedmineDmsf::Errors::DmsfAccessError
       end
       zip.add_file(file, member, (file.dmsf_folder.dmsf_path_str if file.dmsf_folder))
     end
     max_files = Setting.plugin_redmine_dmsf['dmsf_max_file_download'].to_i
     if max_files > 0 && zip.files.length > max_files
-      raise ZipMaxFilesError
+      raise RedmineDmsf::Errors::DmsfZipMaxFilesError
     end
     zip
   end
@@ -580,7 +601,7 @@ class DmsfController < ApplicationController
           flash[:error] = folder.errors.full_messages.to_sentence
         end
       else
-        raise FileNotFound
+        raise RedmineDmsf::Errors::DmsfFileNotFoundError
       end
     end
     # Files
@@ -591,7 +612,7 @@ class DmsfController < ApplicationController
           flash[:error] = file.errors.full_messages.to_sentence
         end
       else
-        raise FileNotFound
+        raise RedmineDmsf::Errors::DmsfFileNotFoundError
       end
     end
     # Links
@@ -602,7 +623,7 @@ class DmsfController < ApplicationController
           flash[:error] = link.errors.full_messages.to_sentence
         end
       else
-        raise FileNotFound
+        raise RedmineDmsf::Errors::DmsfFileNotFoundError
       end
     end
   end
@@ -610,7 +631,7 @@ class DmsfController < ApplicationController
   def delete_entries(selected_folders, selected_files, selected_dir_links, selected_file_links, selected_url_links, commit)
     # Folders
     selected_folders.each do |id|
-      raise DmsfAccessError unless User.current.allowed_to?(:folder_manipulation, @project)
+      raise RedmineDmsf::Errors::DmsfAccessError unless User.current.allowed_to?(:folder_manipulation, @project)
       folder = DmsfFolder.find_by(id: id)
       if folder
         unless folder.delete commit
@@ -618,14 +639,14 @@ class DmsfController < ApplicationController
           return
         end
       elsif !commit
-        raise FileNotFound
+        raise RedmineDmsf::Errors::DmsfFileNotFoundError
       end
     end
     # Files
     deleted_files = []
     not_deleted_files = []
     selected_files.each do |id|
-      raise DmsfAccessError unless User.current.allowed_to?(:file_delete, @project)
+      raise RedmineDmsf::Errors::DmsfAccessError unless User.current.allowed_to?(:file_delete, @project)
       file = DmsfFile.find_by(id: id)
       if file
         if file.delete(commit)
@@ -634,7 +655,7 @@ class DmsfController < ApplicationController
           not_deleted_files << file
         end
       elsif !commit
-        raise FileNotFound
+        raise RedmineDmsf::Errors::DmsfFileNotFoundError
       end
     end
     # Activities
@@ -643,8 +664,8 @@ class DmsfController < ApplicationController
         recipients = DmsfMailer.deliver_files_deleted(@project, deleted_files)
         if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
           if recipients.any?
-            to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
-            to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
+            to = recipients.collect{ |user, _| user.name }.first(Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i).join(', ')
+            to << ((recipients.count > Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i) ? ',...' : '.')
             flash[:warning] = l(:warning_email_notifications, to: to)
           end
         end
@@ -658,12 +679,12 @@ class DmsfController < ApplicationController
     end
     # Links
     selected_dir_links.each do |id|
-      raise DmsfAccessError unless User.current.allowed_to?(:folder_manipulation, @project)
+      raise RedmineDmsf::Errors::DmsfAccessError unless User.current.allowed_to?(:folder_manipulation, @project)
       link = DmsfLink.find_by(id: id)
       link.delete commit if link
     end
     (selected_file_links + selected_url_links).each do |id|
-      raise DmsfAccessError unless User.current.allowed_to?(:file_delete, @project)
+      raise RedmineDmsf::Errors::DmsfAccessError unless User.current.allowed_to?(:file_delete, @project)
       link = DmsfLink.find_by(id: id)
       link.delete commit if link
     end
@@ -698,6 +719,7 @@ class DmsfController < ApplicationController
   end
 
   def get_query
+    retrieve_default_query true
     if Redmine::Plugin.installed?(:easy_extensions)
       @query = retrieve_query_without_easy_extensions(DmsfQuery, true)
     else
@@ -705,13 +727,27 @@ class DmsfController < ApplicationController
     end
   end
 
+  def retrieve_default_query(use_session)
+    return if params[:query_id].present?
+    return if api_request?
+    return if params[:set_filter]
+
+    if params[:without_default].present?
+      params[:set_filter] = 1
+      return
+    end
+    if !params[:set_filter] && use_session && session[:issue_query]
+      query_id, project_id = session[:issue_query].values_at(:id, :project_id)
+      return if DmsfQuery.where(id: query_id).exists? && project_id == @project&.id
+    end
+    if default_query = DmsfQuery.default(project: @project)
+      params[:query_id] = default_query.id
+    end
+  end
+
   def get_project_roles
     @project_roles = Role.givable.joins(:member_roles).joins(:members).where(
       members: { project_id: @project.id }).distinct
-  end
-
-  def text_formating
-    @wiki = Setting.text_formatting != 'HTML'
   end
 
 end

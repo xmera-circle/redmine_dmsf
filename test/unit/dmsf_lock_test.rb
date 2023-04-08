@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -69,13 +69,13 @@ class DmsfLockTest < RedmineDmsf::Test::UnitTest
     @folder7.lock!
     User.current = nil
     assert_no_difference('@folder7.lock.count') do
-      assert_raise DmsfLockError do
+      assert_raise RedmineDmsf::Errors::DmsfLockError do
         @folder7.unlock!
       end
     end
     User.current = @jsmith
      assert_no_difference('@folder7.lock.count') do
-      assert_raise DmsfLockError do
+      assert_raise RedmineDmsf::Errors::DmsfLockError do
         @folder7.unlock!
       end
     end

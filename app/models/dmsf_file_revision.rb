@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -20,8 +20,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-require 'digest'
-
 class DmsfFileRevision < ActiveRecord::Base
 
   belongs_to :dmsf_file
@@ -36,6 +34,10 @@ class DmsfFileRevision < ActiveRecord::Base
 
   STATUS_DELETED = 1
   STATUS_ACTIVE = 0
+
+  PATCH_VERSION = 1
+  MINOR_VERSION = 2
+  MAJOR_VERSION = 3
 
   PROTOCOLS = {
     'application/msword' => 'ms-word',
@@ -56,7 +58,8 @@ class DmsfFileRevision < ActiveRecord::Base
   scope :deleted, -> { where(deleted: STATUS_DELETED) }
 
   acts_as_customizable
-  acts_as_event title: Proc.new { |o| (o.source_dmsf_file_revision_id.present? ? "#{l(:label_dmsf_updated)}" : "#{l(:label_created)}") +
+  acts_as_event title: Proc.new { |o|
+    (o.source_dmsf_file_revision_id.present? ? "#{l(:label_dmsf_updated)}" : "#{l(:label_created)}") +
                                           ": #{o.dmsf_file.dmsf_path_str}"},
     url: Proc.new { |o| { controller: 'dmsf_files', action: 'show', id: o.dmsf_file } },
     datetime: Proc.new { |o| o.updated_at },
@@ -72,11 +75,14 @@ class DmsfFileRevision < ActiveRecord::Base
 
   validates :title, presence: true
   validates :major_version, presence: true
-  validates :minor_version, presence: true
   validates :dmsf_file, presence: true
   validates :name, dmsf_file_name: true
   validates :description, length: { maximum: 1.kilobyte }
   validates :size, dmsf_max_file_size: true
+
+  def visible?
+    deleted == STATUS_ACTIVE
+  end
 
   def project
     dmsf_file.project if dmsf_file
@@ -145,14 +151,19 @@ class DmsfFileRevision < ActiveRecord::Base
   end
 
   def version
-    DmsfFileRevision.version major_version, minor_version
+    DmsfFileRevision.version major_version, minor_version, patch_version
   end
 
-  def self.version(major_version, minor_version)
-    if major_version && minor_version
+  def self.version(major_version, minor_version, patch_version)
+    if major_version
       ver = DmsfUploadHelper::gui_version(major_version).to_s
-      if -minor_version != ' '.ord
-        ver << ".#{DmsfUploadHelper::gui_version(minor_version)}"
+      if minor_version
+        if -minor_version != ' '.ord
+          ver << ".#{DmsfUploadHelper::gui_version(minor_version)}"
+        end
+        if patch_version.present? && (-patch_version != ' '.ord)
+          ver << ".#{DmsfUploadHelper::gui_version(patch_version)}"
+        end
       end
       ver
     end
@@ -184,7 +195,7 @@ class DmsfFileRevision < ActiveRecord::Base
   end
 
   def new_storage_filename
-    raise DmsfAccessError, 'File id is not set' unless dmsf_file&.id
+    raise RedmineDmsf::Errors::DmsfAccessError, 'File id is not set' unless dmsf_file&.id
     filename = DmsfHelper.sanitize_filename(name)
     timestamp = DateTime.current.strftime('%y%m%d%H%M%S')
     while File.exist?(storage_base_path.join("#{timestamp}_#{dmsf_file.id}_#{filename}"))
@@ -211,6 +222,7 @@ class DmsfFileRevision < ActiveRecord::Base
     new_revision.workflow = workflow
     new_revision.major_version = major_version
     new_revision.minor_version = minor_version
+    new_revision.patch_version = patch_version
     new_revision.source_revision = self
     new_revision.user = User.current
     new_revision.name = name
@@ -259,17 +271,27 @@ class DmsfFileRevision < ActiveRecord::Base
   end
 
   def increase_version(version_to_increase)
+    # Patch version
+    self.patch_version = case version_to_increase
+      when PATCH_VERSION
+        patch_version = 0 unless patch_version
+        DmsfUploadHelper.increase_version patch_version
+      else
+        nil
+    end
+    # Minor version
     self.minor_version = case version_to_increase
-      when 1
-        DmsfUploadHelper.increase_version(minor_version, 1)
-      when 2
+      when MINOR_VERSION
+        DmsfUploadHelper.increase_version minor_version
+      when MAJOR_VERSION
         (major_version < 0) ? -(' '.ord) : 0
       else
         minor_version
     end
+    # Major version
     self.major_version = case version_to_increase
-      when 2
-        DmsfUploadHelper::increase_version(major_version, 1)
+      when MAJOR_VERSION
+        DmsfUploadHelper::increase_version major_version
       else
         major_version
     end

@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -129,9 +129,13 @@ class DmsfFileApiTest < RedmineDmsf::Test::IntegrationTest
                  <uploaded_file>
                    <name>test.txt</name>
                    <title>test.txt</title>
+                   <!-- Optional -->
                    <description>REST API</description>
                    <comment>From API</comment>
-                   <version/>
+                   <version_major>A</version_major>
+                   <version_minor>1</version_minor>
+                   <version_patch>0</version_patch>
+                   <!-- End of optional -->
                    <token>#{ftoken}</token>
                  </uploaded_file>
                 </attachments>}

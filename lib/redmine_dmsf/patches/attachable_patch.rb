@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -35,5 +35,10 @@ module RedmineDmsf
   end
 end
 
-RedmineExtensions::PatchManager.register_patch_to_be_first 'Redmine::Acts::Attachable::InstanceMethods',
-    'RedmineDmsf::Patches::AttachablePatch', prepend: true, first: true
+# Apply the patch
+if Redmine::Plugin.installed?(:easy_extensions)
+  RedmineExtensions::PatchManager.register_patch_to_be_first 'Redmine::Acts::Attachable::InstanceMethods',
+   'RedmineDmsf::Patches::AttachablePatch', prepend: true, first: true
+else
+  Redmine::Acts::Attachable.prepend RedmineDmsf::Patches::AttachablePatch
+end

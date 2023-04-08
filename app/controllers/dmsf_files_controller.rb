@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -36,12 +36,14 @@ class DmsfFilesController < ApplicationController
   helper :dmsf_workflows
   helper :dmsf
   helper :queries
+  helper :watchers
+  helper :context_menus
 
   include QueriesHelper
 
   def permissions
     if @file
-      render_403 unless DmsfFolder.permissions?(@file.dmsf_folder)
+      render_403 unless DmsfFolder.permissions?(@file.dmsf_folder, true, true)
     end
     true
   end
@@ -52,23 +54,39 @@ class DmsfFilesController < ApplicationController
         @revision = @file.last_revision
       else
         @revision = DmsfFileRevision.find(params[:download].to_i)
-        raise DmsfAccessError if @revision.dmsf_file != @file
+        raise RedmineDmsf::Errors::DmsfAccessError if @revision.dmsf_file != @file
       end
       check_project @revision.dmsf_file
       raise ActionController::MissingFile if @file.deleted?
+      # Action
       access = DmsfFileRevisionAccess.new
       access.user = User.current
       access.dmsf_file_revision = @revision
       access.action = DmsfFileRevisionAccess::DownloadAction
       access.save!
+      # Notifications
+      begin
+        DmsfMailer.deliver_files_downloaded(@project, [@file], request.remote_ip)
+      rescue => e
+        Rails.logger.error "Could not send email notifications: #{e.message}"
+      end
+      # Allow a preview of the file by an external plugin
+      results = call_hook(:dmsf_files_controller_before_view, { file: @revision.disk_file })
+      return if results.first == true
       member = Member.find_by(user_id: User.current.id, project_id: @file.project.id)
       # IE has got a tendency to cache files
-      expires_in(0.year, 'must-revalidate' => true)
-      send_file @revision.disk_file,
-        filename: filename_for_content_disposition(@revision.formatted_name(member)),
-        type: @revision.detect_content_type,
-        disposition: params[:disposition].present? ? params[:disposition] : @revision.dmsf_file.disposition
-    rescue DmsfAccessError => e
+      expires_in 0.year, 'must-revalidate' => true
+      pdf_preview = (params[:disposition] != 'attachment') && params[:filename].blank? && @file.pdf_preview
+      filename = filename_for_content_disposition(@revision.formatted_name(member))
+      if pdf_preview.present?
+        basename = File.basename(filename, '.*')
+        send_file pdf_preview, filename: "#{basename}.pdf", type: 'application/pdf', disposition: 'inline'
+      else
+        params[:disposition] = 'attachment' if params[:filename].present?
+        send_file @revision.disk_file, filename: filename, type: @revision.detect_content_type,
+          disposition: params[:disposition].present? ? params[:disposition] : @revision.dmsf_file.disposition
+      end
+    rescue RedmineDmsf::Errors::DmsfAccessError => e
       Rails.logger.error e.message
       render_403
     rescue => e
@@ -83,7 +101,7 @@ class DmsfFilesController < ApplicationController
     @file_manipulation_allowed = User.current.allowed_to?(:file_manipulation, @project)
     @revision_count = @file.dmsf_file_revisions.visible.all.size
     @revision_pages = Paginator.new @revision_count, params['per_page'] ? params['per_page'].to_i : 25, params['page']
-    @wiki = Setting.text_formatting != 'HTML'
+    @notifications = Setting.notified_events.include?('dmsf_legacy_notifications')
 
     respond_to do |format|
       format.html {
@@ -97,25 +115,20 @@ class DmsfFilesController < ApplicationController
     if params[:dmsf_file_revision]
       unless @file.locked_for_user?
         revision = DmsfFileRevision.new
-        revision.title = params[:dmsf_file_revision][:title]
-        revision.name = params[:dmsf_file_revision][:name]
-        revision.description = params[:dmsf_file_revision][:description]
-        revision.comment = params[:dmsf_file_revision][:comment]
-
+        revision.title = params[:dmsf_file_revision][:title].scrub.strip
+        revision.name = params[:dmsf_file_revision][:name].scrub.strip
+        revision.description = params[:dmsf_file_revision][:description].scrub.strip
+        revision.comment = params[:dmsf_file_revision][:comment].scrub.strip
         revision.dmsf_file = @file
         last_revision = @file.last_revision
         revision.source_revision = last_revision
         revision.user = User.current
 
-        revision.major_version = last_revision.major_version
-        revision.minor_version = last_revision.minor_version
-        version = params[:version].to_i
-        if version == 3
-          revision.major_version = DmsfUploadHelper::db_version(params[:custom_version_major])
-          revision.minor_version = DmsfUploadHelper::db_version(params[:custom_version_minor])
-        else
-           revision.increase_version(version)
-        end
+        # Version
+        revision.major_version = DmsfUploadHelper::db_version(params[:version_major])
+        revision.minor_version = DmsfUploadHelper::db_version(params[:version_minor])
+        revision.patch_version = DmsfUploadHelper::db_version(params[:version_patch])
+
         file_upload = params[:dmsf_attachments]['1'] if params[:dmsf_attachments].present?
         if file_upload
           upload = DmsfUpload.create_from_uploaded_attachment(@project, @folder, file_upload)
@@ -129,6 +142,7 @@ class DmsfFilesController < ApplicationController
           revision.size = last_revision.size
           revision.disk_filename = last_revision.disk_filename
           revision.mime_type = last_revision.mime_type
+          revision.digest = last_revision.digest
         end
 
         # Custom fields
@@ -142,7 +156,6 @@ class DmsfFilesController < ApplicationController
 
         @file.name = revision.name
         ok = true
-
         if revision.save
           revision.assign_workflow params[:dmsf_workflow_id]
           if upload
@@ -166,19 +179,24 @@ class DmsfFilesController < ApplicationController
           end
           if ok && @file.save
             @file.set_last_revision revision
-            Redmine::Hook.call_hook :dmsf_helper_upload_after_commit, { file: @file }
+            call_hook :dmsf_helper_upload_after_commit, { file: @file }
             begin
               recipients = DmsfMailer.deliver_files_updated(@project, [@file])
               if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
                 if recipients.any?
-                  to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
-                  to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
+                  to = recipients.collect{ |user, _| user.name }.first(
+                    Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i).join(', ')
+                  to << ((recipients.count > Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i) ? ',...' : '.')
                 end
               end
             rescue => e
               Rails.logger.error "Could not send email notifications: #{e.message}"
             end
+          else
+            ok = false
           end
+        else
+          ok = false
         end
       end
     end
@@ -202,13 +220,19 @@ class DmsfFilesController < ApplicationController
       result = @file.delete(commit)
       if result
         flash[:notice] = l(:notice_file_deleted)
-        unless commit
+        if commit
+          container = @file.container
+          if container
+            container.dmsf_file_removed @file
+          end
+        else
           begin
             recipients = DmsfMailer.deliver_files_deleted(@project, [@file])
             if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
               if recipients.any?
-                to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
-                to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
+                to = recipients.collect{ |user, _| user.name }.first(
+                  Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i).join(', ')
+                to << ((recipients.count > Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i) ? ',...' : '.')
                 flash[:warning] = l(:warning_email_notifications, to: to)
               end
             end
@@ -355,7 +379,7 @@ class DmsfFilesController < ApplicationController
 
   def check_project(entry)
     if entry && entry.project != @project
-      raise DmsfAccessError, l(:error_entry_project_does_not_match_current_project)
+      raise RedmineDmsf::Errors::DmsfAccessError, l(:error_entry_project_does_not_match_current_project)
     end
   end
 

@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -26,48 +26,77 @@ class DmsfMailer < Mailer
   layout 'mailer'
 
   def self.deliver_files_updated(project, files)
-    users = get_notify_users(project, files)
-    files = files.select { |file| file.notify? }
-    users.each do |user|
+    hash = {}
+    files.each do |file|
+      users = get_notify_users(project, file)
+      users.each do |user|
+        (hash[user] ||=[]) << file
+      end
+    end
+    hash.each do |user, files|
       files_updated(user, project, files).deliver_later
     end
-    users
   end
 
   def files_updated(user, project, files)
-    if user && project && files.size > 0
-      redmine_headers 'Project' => project.identifier if project
-      @files = files
-      @project = project
-      @author = files.first.last_revision.user if files.first.last_revision
-      @author = User.anonymous unless @author
-      message_id project
-      set_language_if_valid user.language
-      mail to: user.mail, subject: "[#{@project.name} - #{l(:menu_dmsf)}] #{l(:text_email_doc_updated_subject)}"
-    end
+    redmine_headers 'Project' => project.identifier if project
+    @files = files
+    @project = project
+    @author = files.first.last_revision.user if files.first.last_revision
+    @author = User.anonymous unless @author
+    message_id project
+    set_language_if_valid user.language
+    mail to: user, subject: "[#{@project.name} - #{l(:menu_dmsf)}] #{l(:text_email_doc_updated_subject)}"
   end
 
   def self.deliver_files_deleted(project, files)
-    users = get_notify_users(project, files)
-    files = files.select { |file| file.notify? }
-    users.each do |user|
+    hash = {}
+    files.each do |file|
+      users = get_notify_users(project, file)
+      users.each do |user|
+        (hash[user] ||=[]) << file
+      end
+    end
+    hash.each do |user, files|
       files_deleted(user, project, files).deliver_later
     end
-    users
   end
 
   def files_deleted(user, project, files)
-    if user && files.any?
-      redmine_headers 'Project' => project.identifier if project
-      @files = files
-      @project = project
-      @author = files.first.deleted_by_user
-      @author = User.anonymous unless @author
-      message_id project
-      set_language_if_valid user.language
-      mail to: user.mail,
-           subject: "[#{@project.name} - #{l(:menu_dmsf)}] #{l(:text_email_doc_deleted_subject)}"
+    redmine_headers 'Project' => project.identifier if project
+    @files = files
+    @project = project
+    @author = files.first.deleted_by_user
+    @author = User.anonymous unless @author
+    message_id project
+    set_language_if_valid user.language
+    mail to: user, subject: "[#{@project.name} - #{l(:menu_dmsf)}] #{l(:text_email_doc_deleted_subject)}"
+  end
+
+  def self.deliver_files_downloaded(project, files, remote_ip)
+    hash = {}
+    files.each do |file|
+      users = get_notify_users(project, file)
+      users.each do |user|
+        if user.pref.receive_download_notification == '1'
+          (hash[user] ||=[]) << file
+        end
+      end
     end
+    hash.each do |user, files|
+      files_downloaded(user, project, files, remote_ip).deliver_later
+    end
+  end
+
+  def files_downloaded(user, project, files, remote_ip)
+    redmine_headers 'Project' => project.identifier if project
+    @files = files
+    @project = project
+    @author = User.current
+    @remote_ip = remote_ip
+    message_id project
+    set_language_if_valid user.language
+    mail to: user, subject: "[#{@project.name} - #{l(:menu_dmsf)}] #{l(:text_email_doc_downloaded_subject)}"
   end
 
   def self.deliver_send_documents(project, email_params, author)
@@ -132,65 +161,54 @@ class DmsfMailer < Mailer
       @notice = notice
       @author = revision.dmsf_workflow_assigned_by_user
       @author ||= User.anonymous
-      mail to: user.mail,
+      mail to: user,
            subject: "[#{@project.name} - #{l(:field_label_dmsf_workflow)}] #{@workflow.name} #{l(subject_id)} #{step_name}"
     end
   end
 
-  def self.get_notify_users(project, files = [], force_notification = false)
+  # force_notification = true => approval workflow's notifications
+  def self.get_notify_users(project, file, force_notification = false)
     return [] unless project.active?
-    if !force_notification && files.present?
-      notify_files = files.select { |file| file.notify? }
-      return [] if notify_files.empty?
-    end
-    notify_members = project.members.active.select do |notify_member|
-      notify_user = notify_member.user
-      if notify_user == User.current && notify_user.pref.no_self_notified
-        false
-      else
-        if notify_member.dmsf_mail_notification.nil?
-          case notify_user.mail_notification
-          when 'all'
-            true
-          when 'selected'
-            notify_member.mail_notification?
-          when 'only_my_events'
-            author = false
-            files.each do |file|
-              if file.involved?(notify_user) || file.assigned?(notify_user)
-                author = true
-                break
-              end
-            end
-            author
-          when 'only_owner'
-            owner = false
-            files.each do |file|
-              if file.owner?(notify_user)
-                owner = true
-                break
-              end
-            end
-            owner
-          when 'only_assigned'
-            assignee = false
-            files.each do |file|
-              if file.assigned?(notify_user)
-                assignee = true
-                break
-              end
-            end
-            assignee
-          else
-            false
-          end
+    # Notifications
+    if (force_notification && Setting.notified_events.include?('dmsf_workflow_plural')) ||
+      (Setting.notified_events.include?('dmsf_legacy_notifications') && file&.notify?)
+      notify_members = project.members.active.select do |notify_member|
+        notify_user = notify_member.user
+        if notify_user == User.current && notify_user.pref.no_self_notified
+          false
         else
-          notify_member.dmsf_mail_notification
+          if notify_member.dmsf_mail_notification.nil?
+            case notify_user.mail_notification
+            when 'all'
+              true
+            when 'selected'
+              notify_member.mail_notification?
+            when 'only_my_events'
+              file.involved?(notify_user) || file.assigned?(notify_user)
+            when 'only_owner'
+              file.owner? notify_user
+            when 'only_assigned'
+              file.assigned? notify_user
+            else
+              false
+            end
+          else
+            notify_member.dmsf_mail_notification
+          end
         end
       end
+      users = notify_members.collect { |m| m.user }
+    else
+      users = []
     end
-
-    notify_members.collect { |m| m.user }.uniq
+    # Watchers
+    watchers = []
+    file&.get_all_watchers(watchers)
+    users.concat watchers
+    if User.current && User.current.pref.no_self_notified
+      users.delete User.current
+    end
+    users.uniq
   end
 
 end

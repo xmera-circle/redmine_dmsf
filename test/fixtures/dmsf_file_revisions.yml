@@ -94,10 +94,10 @@ dmsf_file_revisions_005:
   disk_filename:                      'test5.txt'
   size:                               4
   mime_type:                          'application/vnd.oasis.opendocument.text'
-  title:                              'Test File'
+  title:                              'Test file'
   description:                        NULL
   workflow:                           1 # DmsfWorkflow::STATE_WAITING_FOR_APPROVAL
-  minor_version:                      0
+  minor_version:                      1
   major_version:                      1
   comment:                            'Wrong mime type in order to have Edit content menu item'
   deleted:                            0
@@ -115,7 +115,7 @@ dmsf_file_revisions_006:
   disk_filename:                      'test.gif'
   size:                               4
   mime_type:                          'image/gif'
-  title:                              'Image'
+  title:                              'Test image'
   description:                        NULL
   workflow:                           NULL
   minor_version:                      0
@@ -136,7 +136,7 @@ dmsf_file_revisions_007:
   disk_filename:                      'test.pdf'
   size:                               4
   mime_type:                          'application/pdf'
-  title:                              'PDF'
+  title:                              'Test PDF'
   description:                        NULL
   workflow:                           NULL
   minor_version:                      0
@@ -234,3 +234,47 @@ dmsf_file_revisions_011:
   dmsf_workflow_started_by_user_id:   1
   digest:                             '81dc9bdb52d04dc20036dbd8313ed055'
   created_at:                         2017-04-18 14:52:27 +02:00
+
+dmsf_file_revisions_012:
+  id:                                 12
+  dmsf_file_id:                       6
+  source_dmsf_file_revision_id:       NULL
+  name:                               'test.mp4'
+  disk_filename:                      'test.mp4'
+  size:                               4
+  mime_type:                          'video/mp4'
+  title:                              'test video'
+  description:                        'A video :-)'
+  workflow:                           0
+  minor_version:                      0
+  major_version:                      1
+  comment:                            NULL
+  deleted:                            0
+  deleted_by_user_id:                 NULL
+  user_id:                            1
+  dmsf_workflow_assigned_by_user_id:  NULL
+  dmsf_workflow_started_by_user_id:   NULL
+  digest:                             '81dc9bdb52d04dc20036dbd8313ed055'
+  created_at:                         2022-02-03 13:39:27 +02:00
+
+dmsf_file_revisions_013:
+  id:                                 13
+  dmsf_file_id:                       13
+  source_dmsf_file_revision_id:       NULL
+  name:                               'test.odt'
+  disk_filename:                      'test.odt'
+  size:                               4
+  mime_type:                          'application/vnd.oasis.opendocument.text'
+  title:                              'Test office document'
+  description:                        'LibreOffice text'
+  workflow:                           0
+  minor_version:                      0
+  major_version:                      1
+  comment:                            NULL
+  deleted:                            0
+  deleted_by_user_id:                 NULL
+  user_id:                            1
+  dmsf_workflow_assigned_by_user_id:  NULL
+  dmsf_workflow_started_by_user_id:   NULL
+  digest:                             '89a6d0ea9aafc21a978152f3e4977812d5d7d623505749471f256a90fc7c5f72'
+  created_at:                         2017-04-01 08:54:00 +02:00

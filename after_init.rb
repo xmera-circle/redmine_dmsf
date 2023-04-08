@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,10 +21,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-require_dependency 'zip'
-require_dependency File.dirname(__FILE__) + '/lib/redmine_dmsf.rb'
-
-ActiveSupport::Dependencies.autoload_paths << File.join(File.dirname(__FILE__), 'app', 'validators')
+require 'redmine'
+require 'zip'
+require File.dirname(__FILE__) + '/lib/redmine_dmsf'
 
 def dmsf_init
   # Administration menu extension
@@ -36,12 +35,21 @@ def dmsf_init
   Redmine::MenuManager.map :project_menu do |menu|
     menu.push :dmsf, { controller: 'dmsf', action: 'show' }, caption: :menu_dmsf, before: :documents,
               param: :id, html: { class: 'icon icon-dmsf' }
+    # New menu extension
+    unless Redmine::Plugin.installed?(:easy_extensions)
+      menu.push :dmsf_file, { controller: 'dmsf_upload', action: 'multi_upload'},
+                caption: :label_dmsf_new_top_level_document, parent: :new_object
+      menu.push :dmsf_folder, { controller: 'dmsf', action: 'new'}, caption: :label_dmsf_new_top_level_folder,
+                parent: :new_object
+    end
   end
   # Main menu extension
-  Redmine::MenuManager.map :top_menu do |menu|
-    menu.push :dmsf, { controller: 'dmsf', action: 'index' }, caption: :menu_dmsf,
-              html: { class: 'icon-dmsf', category: :rest_extension_modules},
+  unless(ActiveRecord::Base.connection.data_source_exists?('settings') &&
+    Setting.plugin_redmine_dmsf['dmsf_global_menu_disabled'])
+    Redmine::MenuManager.map :top_menu do |menu|
+      menu.push :dmsf, { controller: 'dmsf', action: 'index' }, caption: :menu_dmsf, html: { class: 'icon-dmsf' },
               if: Proc.new { User.current.allowed_to?(:view_dmsf_folders, nil, global: true) }
+    end
   end
 
   Redmine::AccessControl.map do |map|
@@ -91,6 +99,16 @@ def dmsf_init
                                            :reorder_steps, :update, :update_step, :delete_step, :edit] }
       pmap.permission :display_system_folders,
                       read: true
+      # Watchers
+      pmap.permission :view_dmsf_file_watchers, {}, read: true
+      pmap.permission :add_dmsf_file_watchers, { watchers: [:new, :create, :append, :autocomplete_for_user]}
+      pmap.permission :delete_dmsf_file_watchers, { watchers: :destroy}
+      pmap.permission :view_dmsf_folder_watchers, {}, read: true
+      pmap.permission :add_dmsf_folder_watchers, { watchers: [:new, :create, :append, :autocomplete_for_user]}
+      pmap.permission :delete_dmsf_folder_watchers, { watchers: :destroy}
+      pmap.permission :view_project_watchers, {}, read: true
+      pmap.permission :add_project_watchers, { watchers: [:new, :create, :append, :autocomplete_for_user]}
+      pmap.permission :delete_project_watchers, { watchers: :destroy}
     end
   end
 end
@@ -102,14 +120,14 @@ if Redmine::Plugin.installed?(:easy_extensions)
     require File.expand_path('../app/models/easy_page_modules/easy_dms/epm_dmsf_locked_documents', __FILE__)
     require File.expand_path('../app/models/easy_page_modules/easy_dms/epm_dmsf_open_approvals', __FILE__)
 
-    EpmDmsfLockedDocuments.register_to_scope(:user, plugin: :redmine_dmsf)
-    EpmDmsfOpenApprovals.register_to_scope(:user, plugin: :redmine_dmsf)
+    EasyPageModules::EasyDms::EpmDmsfLockedDocuments.register_to_scope(:user, plugin: :redmine_dmsf)
+    EasyPageModules::EasyDms::EpmDmsfOpenApprovals.register_to_scope(:user, plugin: :redmine_dmsf)
   end
 else
   dmsf_init
 end
 
-RedmineExtensions::Reloader.to_prepare do
+Rails.application.configure do
   # Rubyzip configuration
   Zip.unicode_names = true
 
@@ -117,11 +135,13 @@ RedmineExtensions::Reloader.to_prepare do
   CustomFieldsHelper::CUSTOM_FIELDS_TABS << { name: 'DmsfFileRevisionCustomField', partial: 'custom_fields/index',
                                               label: :dmsf }
 
+  # Searchable modules
   Redmine::Search.map do |search|
     search.register :dmsf_files
     search.register :dmsf_folders
   end
 
+  # Activities
   Redmine::Activity.register :dmsf_file_revision_accesses, default: false
   Redmine::Activity.register :dmsf_file_revisions
 
@@ -129,6 +149,3 @@ RedmineExtensions::Reloader.to_prepare do
   # Redmine::Search.available_search_types.delete('documents')
   # Redmine::AccessControl.available_project_modules.delete(:documents)
 end
-
-# WebDAV
-Rails.configuration.middleware.insert_before ActionDispatch::Cookies, RedmineDmsf::Webdav::CustomMiddleware

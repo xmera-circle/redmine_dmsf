@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
-require 'uri'
+require File.dirname(__FILE__) + '/uri'
 require 'addressable/uri'
-require 'dav4rack/logger'
-require 'dav4rack/uri'
+require File.dirname(__FILE__) + '/logger'
 
-module DAV4Rack
+module Dav4rack
   class Request < Rack::Request
 
     # Root URI path for the resource
@@ -89,7 +88,7 @@ module DAV4Rack
     # Destination header
     def destination
       @destination ||= if h = get_header('HTTP_DESTINATION')
-        DestinationHeader.new DAV4Rack::Uri.new(h, script_name: script_name)
+        DestinationHeader.new Dav4rack::Uri.new(h, script_name: script_name)
       end
     end
 
@@ -131,7 +130,7 @@ module DAV4Rack
     # returns the given path, but with the leading script_name removed. Will
     # return nil if the path does not begin with the script_name
     def path_info_for(full_path, script_name: self.script_name)
-      uri = DAV4Rack::Uri.new full_path, script_name: script_name
+      uri = Dav4rack::Uri.new full_path, script_name: script_name
       return uri.path_info
     end
 
@@ -143,6 +142,8 @@ module DAV4Rack
       collection = path.end_with?('/')
       path = ::File.expand_path path
       path << '/' if collection and !path.end_with?('/')
+      # remove a drive letter in Windows
+      path.gsub!(/^([^\/]*)\//, '/')
       path
     end
 
@@ -195,8 +196,8 @@ module DAV4Rack
         config.strict
       } if body
     rescue
-      DAV4Rack::Logger.error $!.message
-      raise ::DAV4Rack::HTTPStatus::BadRequest
+      Dav4rack::Logger.error $!.message
+      raise ::Dav4rack::HttpStatus::BadRequest
     end
 
   end

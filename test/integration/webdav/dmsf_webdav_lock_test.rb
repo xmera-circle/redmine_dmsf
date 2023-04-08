@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012   Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -121,7 +121,7 @@ class DmsfWebdavLockTest < RedmineDmsf::Test::IntegrationTest
 
   def test_lock_subproject
     log_user 'admin', 'admin'
-    process :lock, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}", params: @xml,
+    process :lock, "/dmsf/webdav/#{@project1.identifier}/#{@project5.identifier}", params: @xml,
             headers: @admin.merge!({ HTTP_DEPTH: 'infinity', HTTP_TIMEOUT: 'Infinite' })
     assert_response :multi_status
     assert_match '<d:status>HTTP/1.1 405 Method Not Allowed</d:status>', response.body

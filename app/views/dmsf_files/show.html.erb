@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -44,12 +44,12 @@
       <% if defined?(EasyExtensions) %>
         <%= render partial: 'dmsf_context_menus/revisions',
                    locals: { project: @project, file: @file, file_delete_allowed: @file_delete_allowed,
-                             back_url: dmsf_file_path(id: @file)} %>
+                             notifications: @notifications, back_url: dmsf_file_path(id: @file)} %>
       <% else %>
         <%= actions_dropdown do %>
           <%= render partial: 'dmsf_context_menus/revisions',
                      locals: { project: @project, file: @file, file_delete_allowed: @file_delete_allowed,
-                               back_url: dmsf_file_path(id: @file) } %>
+                               notifications: @notifications, back_url: dmsf_file_path(id: @file) } %>
         <% end %>
       <% end %>
     <% end %>
@@ -61,7 +61,7 @@
 <% if @file_manipulation_allowed && !@file.locked_for_user? %>
   <%= error_messages_for 'file' %>
   <%= error_messages_for 'revision' %>
-  <%= render partial: 'file_new_revision', locals: { wiki: @wiki }  %>
+  <%= render partial: 'file_new_revision' %>
 <% end %>
 
 <div class="dmsf-id-box">
@@ -103,7 +103,7 @@
           <% if revision.description.present? %>
             <div class="status attribute">
               <%= content_tag :div, l(:label_description), class: 'label' %>
-              <% text = clean_wiki_text(textilizable(h(revision.description))) %>
+              <% text = clean_wiki_text(textilizable(revision.description)) %>
               <%= content_tag :div, text.html_safe, class: 'value wiki' %>
             </div>
           <% end %>
@@ -132,7 +132,7 @@
           <% if revision.comment.present? %>
             <div class="status attribute">
               <%= content_tag :div, l(:label_comment), class: 'label' %>
-              <% text = clean_wiki_text(textilizable(h revision.comment)) %>
+              <% text = clean_wiki_text(textilizable(revision.comment)) %>
               <%= content_tag :div, text.html_safe, class: 'value wiki' %>
             </div>
           <% end %>
@@ -167,9 +167,17 @@
       </div>
     </div>
   </div>
-  <br/>
+  <br>
 <% end %>
 <span class="pagination"><%= pagination_links_full @revision_pages, @revision_count %></span>
+
+<% if @file.watchers.present? %>
+  <% content_for :sidebar do %>
+    <div id="watchers">
+      <%= render partial: 'watchers/watchers', locals: { watched: @file } %>
+    </div>
+  <% end %>
+<% end %>
 
 <%= late_javascript_tag do %>
   $('a.delete-revision').click(function(event) {
@@ -181,12 +189,6 @@
     if(!window.confirm('<%= l(:text_are_you_sure) %>')) {
       event.preventDefault();
     }
-  });
-  $('#file_upload_box').change(function() {
-    if($("input[name='version']:checked").val() == '0') {
-      $('#version_1').prop('checked', true);
-    }
-    $('#version_0').prop('disabled', true);
   });
   $('#new_revision_form_content_toggle').click(function() {
     if($('#new_revision_form_content').is(':visible')) {

@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012   Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -276,10 +276,10 @@ class DmsfWebdavPutTest < RedmineDmsf::Test::IntegrationTest
   end
 
   def test_put_into_subproject
-    put "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/test-1234.txt", params: '1234',
+    put "/dmsf/webdav/#{@project1.identifier}/#{@project5.identifier}/test-1234.txt", params: '1234',
         headers: @admin.merge!({ content_type: :text })
     assert_response :created
-    assert DmsfFile.find_by(project_id: @project3.id, dmsf_folder: nil, name: 'test-1234.txt')
+    assert DmsfFile.find_by(project_id: @project5.id, dmsf_folder: nil, name: 'test-1234.txt')
   end
 
   def test_put_keep_title
@@ -337,6 +337,25 @@ class DmsfWebdavPutTest < RedmineDmsf::Test::IntegrationTest
           headers: @jsmith.merge!({ content_type: :text })
       assert_response :unprocessable_entity
     end
+  end
+
+  def test_put_digest
+    assert_difference '@file1.dmsf_file_revisions.count', +1 do
+      put "/dmsf/webdav/#{@project1.identifier}/#{@file1.name}", params: '1234',
+          headers: @jsmith.merge!({ content_type: :text })
+      assert_response :created
+    end
+    sha = Digest::SHA256.file(@file1.last_revision.disk_file)
+    assert_equal sha, @file1.last_revision.digest
+  end
+
+  def test_put_version
+    assert_difference '@file1.dmsf_file_revisions.count', +1 do
+      put "/dmsf/webdav/#{@project1.identifier}/#{@file1.name}", params: '1234',
+          headers: @jsmith.merge!({ content_type: :text })
+      assert_response :created
+    end
+    assert_equal '1.2', @file1.last_revision.version
   end
   
 end

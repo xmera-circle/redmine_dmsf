@@ -4,7 +4,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -26,9 +26,10 @@ source 'https://rubygems.org' do
   gem 'active_record_union'
 
   # Redmine extensions
-  unless %w(easyproject easy_gantt).any? { |plugin| Dir.exist?(File.expand_path("../../#{plugin}", __FILE__)) }
-    gem 'redmine_extensions', '~> 0.3.9'
+  unless Dir.exist?(File.expand_path('../../easyproject', __FILE__))
     gem 'simple_enum'
+  end
+  unless %w(easyproject easy_gantt custom_tables).any? { |plugin| Dir.exist?(File.expand_path("../../#{plugin}", __FILE__)) }
     group :test do
       gem 'rails-controller-testing'
     end

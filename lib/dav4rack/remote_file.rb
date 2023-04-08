@@ -1,9 +1,8 @@
 require 'net/http'
 require 'uri'
-require 'digest/sha1'
 require 'rack/file'
 
-module DAV4Rack
+module Dav4rack
   
    #FIXME unused?
   class RemoteFile < Rack::File
@@ -28,7 +27,7 @@ module DAV4Rack
       @heads = {}
       @cache_file = args[:cache_directory] ? cache_file_path : nil
       @redefine_prefix = nil
-      if(@cache_file && File.exists?(@cache_file))
+      if(@cache_file && File.exist?(@cache_file))
         @root = ''
         @path_info = @cache_file
         @path = @path_info

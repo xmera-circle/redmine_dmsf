@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -43,26 +43,28 @@ end
 class DmsfCreateDigest
 
   def initialize
-    @dry_run = ENV['dry_run']
-    @force_sha256 = ENV['forceSHA256']
+    @dry_run = ENV.fetch('dry_run', nil)
+    @force_sha256 = ENV.fetch('forceSHA256', nil)
   end
 
   def dmsf_create_digests
-    revisions = DmsfFileRevision.where(['digest IS NULL OR length(digest) < ?', @force_sha256 ? 64 : 32])
-    count = revisions.count
+    revisions = DmsfFileRevision.where(['digest IS NULL OR digest = ? OR length(digest) < ?',
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', # Checksum is always the same via WebDAV #1384
+      @force_sha256 ? 64 : 32])
+    count = revisions.all.size
     n = 0
     revisions.each_with_index do |rev, i|
       if File.exist?(rev.disk_file)
-        sha = Digest::SHA256.new
         file = File.new rev.disk_file, 'r'
         if file.respond_to?(:read)
+          sha = Digest::SHA256.new
           while (buffer = file.read(8192))
             sha.update buffer
           end
+          rev.digest = sha.hexdigest
         else
-          sha.update @temp_file
+          rev.digest = Digest::SHA256.file(rev.disk_file)
         end
-        rev.digest = sha.hexdigest
         rev.save unless @dry_run
       else
         puts "#{rev.disk_file} not found"
@@ -73,7 +75,7 @@ class DmsfCreateDigest
     end
     print "\r100%\n"
     # Result
-    puts "#{n}/#{DmsfFileRevision.count} revisions updated."
+    $stdout.puts "#{n}/#{count} revisions updated."
   end
 
 end

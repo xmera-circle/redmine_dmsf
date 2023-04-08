@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -31,6 +31,7 @@ class DmsfUpload
   attr_accessor :comment
   attr_accessor :major_version
   attr_accessor :minor_version
+  attr_accessor :patch_version
   attr_accessor :locked
   attr_accessor :workflow
   attr_accessor :custom_values
@@ -38,7 +39,7 @@ class DmsfUpload
   attr_accessor :digest
 
   def disk_file
-    DmsfHelper.temp_dir.join(disk_filename).to_s
+    File.join Rails.root, 'tmp', disk_filename
   end
 
   def self.create_from_uploaded_attachment(project, folder, uploaded_file)
@@ -81,8 +82,14 @@ class DmsfUpload
     if file.nil? || file.last_revision.nil?
       @title = DmsfFileRevision.filename_to_title(@name)
       @description = uploaded[:comment]
-      @major_version = 0
-      @minor_version = 0
+      if Setting.plugin_redmine_dmsf['empty_minor_version_by_default']
+        @major_version = 1
+        @minor_version = nil
+      else
+        @major_version = 0
+        @minor_version = 0
+      end
+      @patch_version = nil
       @workflow = nil
       file = DmsfFile.new
       file.project_id = project.id
@@ -100,6 +107,7 @@ class DmsfUpload
       end
       @major_version = last_revision.major_version
       @minor_version = last_revision.minor_version
+      @patch_version = last_revision.patch_version
       @workflow = last_revision.workflow
       @custom_values = Array.new(file.last_revision.custom_values)
 

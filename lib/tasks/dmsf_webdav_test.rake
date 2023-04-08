@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21   Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23   Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -35,8 +35,11 @@ namespace :redmine do
     prj = Project.new
     prj.identifier = 'dmsf_test_project'
     prj.name = 'DMFS Test Project'
+    prj.description = 'A temporary project for Litmus tests'
     prj.enable_module! :dmsf
-    prj.save
+    unless prj.save
+      Rails.logger.error prj.errors.full_messages.to_sentence
+    end
     # Settings
     Setting.rest_api_enabled = true
     # Plugin's settings

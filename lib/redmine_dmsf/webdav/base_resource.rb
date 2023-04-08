@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -20,13 +20,12 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-require 'dav4rack'
 require 'addressable/uri'
 
 module RedmineDmsf
   module Webdav
 
-    class BaseResource < DAV4Rack::Resource
+    class BaseResource < Dav4rack::Resource
       include Redmine::I18n
       include ActionView::Helpers::NumberHelper
 
@@ -70,11 +69,11 @@ module RedmineDmsf
           <html lang="#{current_language}">
             <head>
               <title>%s</title>
-              <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+              <meta http-equiv="content-type" content="text/html; charset=utf-8">
             </head>
             <body>
               <h1>%s</h1>
-              <hr/>
+              <hr>
               <table>
                 <tr>
                   <th class="name">#{l(:field_name)}</th>
@@ -84,7 +83,7 @@ module RedmineDmsf
                 </tr>
                 %s
               </table>
-              <hr/>
+              <hr>
            </body>
           </html>
         }
@@ -245,7 +244,10 @@ module RedmineDmsf
             else
               @file = DmsfFile.find_file_by_name(@project, @folder, pinfo.first)
               @folder = nil
-              raise Conflict unless (pinfo.length < 2 || @file)
+              unless (pinfo.length < 2 || @file)
+                Rails.logger.error "Resource not found: #{@path}"
+                raise Conflict
+              end
               break # We're at the end
             end
           end

@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -28,6 +28,13 @@ module RedmineDmsf
 
       ##################################################################################################################
       # Overridden methods
+
+      def initialize(attributes=nil, *args)
+        super
+        if new_record?
+          self.watcher_user_ids = []
+        end
+      end
 
       def copy(project, options={})
         super(project, options)
@@ -61,6 +68,10 @@ module RedmineDmsf
             class_name: 'DmsfLink', foreign_key: 'project_id', dependent: :destroy
           has_many :dmsf_links, -> { where dmsf_folder_id: nil },
             class_name: 'DmsfLink', foreign_key: 'project_id', dependent: :destroy
+
+          belongs_to :default_dmsf_query, class_name: 'DmsfQuery'
+
+          acts_as_watchable
 
           before_save :set_default_dmsf_notification
 
@@ -117,7 +128,7 @@ module RedmineDmsf
 
       # Go recursively through the project tree until a dmsf enabled project is found
       def dmsf_available?
-        return true if(visible? && module_enabled?(:dmsf))
+        return true if(visible? && module_enabled?(:dmsf) && User.current&.allowed_to?(:view_dmsf_folders, self))
         children.each do |child|
           return true if child.dmsf_available?
         end
@@ -129,5 +140,10 @@ module RedmineDmsf
   end
 end
 
-RedmineExtensions::PatchManager.register_model_patch 'Project',
+# Apply the patch
+if Redmine::Plugin.installed?(:easy_extensions)
+  RedmineExtensions::PatchManager.register_model_patch 'Project',
     'RedmineDmsf::Patches::ProjectPatch', prepend: true
+else
+  Project.prepend RedmineDmsf::Patches::ProjectPatch
+end

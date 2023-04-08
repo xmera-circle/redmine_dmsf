@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@lbcfree.net>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -60,6 +60,17 @@ class DmsfMailerTest < RedmineDmsf::Test::UnitTest
     end
   end
 
+  def test_files_downloaded
+    DmsfMailer.deliver_files_downloaded(@file1.project, [@file1], '127.0.0.1')
+    email = last_email
+    if email # Sometimes it doesn't work. Especially on localhost.
+      body = text_part(email)&.body
+      assert(body.include?(@file1.project.name)) if body
+      body = html_part(email)&.body
+      assert(body.include?(@file1.project.name)) if body
+    end
+  end
+
   def test_send_documents
     email_params = Hash.new
     body = 'Test'
@@ -94,20 +105,34 @@ class DmsfMailerTest < RedmineDmsf::Test::UnitTest
   end
 
   def test_get_notify_users
-    users = DmsfMailer.get_notify_users(@project1, [@file1])
-    assert users.present?
+    with_settings :notified_events => ['dmsf_legacy_notifications'] do
+      users = DmsfMailer.get_notify_users(@project1, @file1)
+      assert users.present?
+    end
+    with_settings :notified_events => [] do
+      users = DmsfMailer.get_notify_users(@project1, @file1)
+      assert users.empty?
+    end
   end
 
   def test_get_notify_users_notification_switched_off
     @file1.notify_deactivate
-    users = DmsfMailer.get_notify_users(@project1, [@file1])
+    users = DmsfMailer.get_notify_users(@project1, @file1)
     assert users.blank?
   end
 
   def test_get_notify_users_on_inactive_projects
     @project1.status = Project::STATUS_CLOSED
-    users = DmsfMailer.get_notify_users(@project1, [@file1])
+    users = DmsfMailer.get_notify_users(@project1, @file1)
     assert users.blank?
+  end
+
+  def test_get_notify_users_with_watchers
+    @file1.add_watcher @jsmith
+    with_settings :notified_events => [] do
+      users = DmsfMailer.get_notify_users(@project1, @file1)
+      assert users.present?
+    end
   end
 
 end

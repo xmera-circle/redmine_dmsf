@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -72,20 +72,20 @@ class DmsfWebdavMkcolTest < RedmineDmsf::Test::IntegrationTest
   end
 
   def test_create_folder_in_subproject
-    process :mkcol, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/test1", params: nil,
+    process :mkcol, "/dmsf/webdav/#{@project1.identifier}/#{@project5.identifier}/test1", params: nil,
             headers: @admin
     assert_response :success
   end
 
   def test_create_folder_with_square_brackets_of_the_same_name_as_a_sub_project
-    project3_uri = ERB::Util.url_encode(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project3))
+    project3_uri = ERB::Util.url_encode(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project5))
     process :mkcol, "/dmsf/webdav/#{@project1.identifier}/#{project3_uri}", params: nil,
             headers: @admin
     assert_response :method_not_allowed
   end
 
   def test_create_folder_of_the_same_name_as_a_sub_project
-    process :mkcol, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}", params: nil,
+    process :mkcol, "/dmsf/webdav/#{@project1.identifier}/#{@project5.identifier}", params: nil,
             headers: @admin
     assert_response :method_not_allowed
   end

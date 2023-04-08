@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -162,6 +162,23 @@ class DmsfFilesCopyControllerTest < RedmineDmsf::Test::TestCase
     @request.session[:user_id] = @someone.id
     post :move, params: { id: @file9.id, dmsf_file_or_folder: { target_project_id: @project2.id } }
     assert_response :forbidden
+  end
+
+  def test_new_fast_links_enabled
+    member = Member.find_by(user_id: @jsmith.id, project_id: @project1.id)
+    assert member
+    member.update_attribute :dmsf_fast_links, true
+    get :new, params: { id: @file1.id }
+    assert_response :success
+    assert_select 'label', { count: 0, text: l(:label_target_project) }
+    assert_select 'label', { count: 0, text: "#{l(:label_target_folder)}#" }
+  end
+
+  def test_move_fast_links_enabled
+    # Target project is not given
+    post :move, params: { id: @file1.id, dmsf_file_or_folder: { target_folder_id: @folder1.id } }
+    assert_response :redirect
+    assert_nil flash[:error]
   end
   
 end

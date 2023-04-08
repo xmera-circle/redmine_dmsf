@@ -50,7 +50,7 @@ dmsf_files_006:
   id:                 6
   project_id:         1
   dmsf_folder_id:     3
-  name:               'test.txt'
+  name:               'test.mp4'
   notification:       false
   deleted:            0
   deleted_by_user_id: NULL
@@ -102,9 +102,17 @@ dmsf_files_011:
 
 dmsf_files_012:
   id:                 12
-  project_id:         3
+  project_id:         5
   dmsf_folder_id:     NULL
   name:               'test.txt'
   notification:       false
+  deleted:            0
+  deleted_by_user_id: NULL
+
+dmsf_files_013:
+  id:                 13
+  project_id:         1
+  dmsf_folder_id:     NULL
+  name:               'test.odt'
   deleted:            0
   deleted_by_user_id: NULL

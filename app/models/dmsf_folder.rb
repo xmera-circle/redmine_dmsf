@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@konton.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@konton.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class DmsfFolder < ActiveRecord::Base
-
   include RedmineDmsf::Lockable
 
   belongs_to :project
@@ -47,7 +46,7 @@ class DmsfFolder < ActiveRecord::Base
   INVALID_CHARACTERS = '\[\]\/\\\?":<>#%\*'
   STATUS_DELETED = 1
   STATUS_ACTIVE = 0
-  AVAILABLE_COLUMNS = %w(id title size modified version workflow author).freeze
+  AVAILABLE_COLUMNS = %w(id title size modified version workflow author description comment).freeze
   DEFAULT_COLUMNS = %w(title size modified version workflow author).freeze
 
   def self.visible_condition(system=true)
@@ -78,13 +77,12 @@ class DmsfFolder < ActiveRecord::Base
   scope :notsystem, -> { where(system: false) }
 
   acts_as_customizable
-
   acts_as_searchable columns: ["#{table_name}.title", "#{table_name}.description"],
         project_key: 'project_id',
         date_column: 'updated_at',
         permission: :view_dmsf_files,
         scope: Proc.new { DmsfFolder.visible }
-
+  acts_as_watchable
   acts_as_event title: Proc.new { |o| o.title },
           description: Proc.new { |o| o.description },
           url: Proc.new { |o| { controller: 'dmsf', action: 'show', id: o.project, folder_id: o } },
@@ -100,15 +98,27 @@ class DmsfFolder < ActiveRecord::Base
 
   before_create :default_values
 
-  def self.permissions?(folder, allow_system = true)
+  def visible?(user=User.current)
+    if self.respond_to?(:type)
+      if /^folder/.match?(type)
+        return DmsfFolder.visible.where(id: self.id).exists?
+      end
+    end
+    true
+  end
+
+  def self.permissions?(folder, allow_system = true, file = false)
     # Administrator?
-    return true if (User.current.admin? || folder.nil?)
+    return true if (User.current&.admin? || folder.nil?)
+    # Permissions to the project?
+    # If file is true we work just with the file and not viewing the folder
+    return false unless file || User.current&.allowed_to?(:view_dmsf_folders, folder.project)
     # System folder?
     if folder && folder.system
       return false unless allow_system || User.current.allowed_to?(:display_system_folders, folder.project)
       return false if folder.issue && !folder.issue.visible?(User.current)
     end
-    # Permissions?
+    # Permissions to the folder?
     if folder.dmsf_folder_permissions.any?
       role_ids = User.current.roles_for_project(folder.project).map{ |r| r.id }
       role_permission_ids = folder.dmsf_folder_permissions.roles.map{ |p| p.object_id }
@@ -120,6 +130,13 @@ class DmsfFolder < ActiveRecord::Base
       return false
     end
     DmsfFolder.permissions?(folder.dmsf_folder, allow_system)
+  end
+
+  def initialize(*args)
+    super
+    if new_record?
+      self.watcher_user_ids = []
+    end
   end
 
   def default_values
@@ -197,10 +214,16 @@ class DmsfFolder < ActiveRecord::Base
   end
 
   def notify?
-    return true if notification
-    return true if dmsf_folder&.notify?
-    return true if !dmsf_folder && project.dmsf_notification
-    false
+    notification || dmsf_folder&.notify? || (!dmsf_folder && project.dmsf_notification)
+  end
+
+  def get_all_watchers(watchers)
+    watchers << notified_watchers
+    if dmsf_folder
+      watchers << dmsf_folder.notified_watchers
+    else
+      watchers << project.notified_watchers
+    end
   end
 
   def notify_deactivate
@@ -468,8 +491,8 @@ class DmsfFolder < ActiveRecord::Base
 
   def update_from_params(params)
     # Attributes
-    self.title = params[:dmsf_folder][:title].strip
-    self.description = params[:dmsf_folder][:description].strip
+    self.title = params[:dmsf_folder][:title].scrub.strip
+    self.description = params[:dmsf_folder][:description].scrub.strip
     self.dmsf_folder_id = params[:parent_id].present? ? params[:parent_id] : params[:dmsf_folder][:dmsf_folder_id]
     self.system = params[:dmsf_folder][:system].present?
     # Custom fields
@@ -508,7 +531,7 @@ class DmsfFolder < ActiveRecord::Base
     # 1. Invalid characters are replaced with dots.
     # 2. Two or more dots in a row are replaced with a single dot.
     # 3. Windows' WebClient does not like a dot at the end.
-    title.gsub(/[#{INVALID_CHARACTERS}]/, '.').gsub(/\.{2,}/, '.').chomp('.')
+    title.scrub.gsub(/[#{INVALID_CHARACTERS}]/, '.').gsub(/\.{2,}/, '.').chomp('.')
   end
 
   def permission_for_role(role)
@@ -577,8 +600,8 @@ class DmsfFolder < ActiveRecord::Base
       if title =~ /^\./
         classes << 'dmsf-system'
       else
+        classes << 'hascontextmenu'
         if (type != 'project')
-          classes << 'hascontextmenu'
           classes << 'dmsf-draggable'
         end
         if %(project folder).include?(type)

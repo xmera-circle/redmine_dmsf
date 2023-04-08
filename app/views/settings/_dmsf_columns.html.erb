@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,11 +30,16 @@
     <% columns.insert(0, columns.delete_at(index)) %>
   <% end %>
   <% cfs = DmsfFileRevisionCustomField.visible.order(:position) %>
-  <% columns.concat(cfs.map{ |c| c.name }) %>
   <% selected_columns = DmsfFolder::DEFAULT_COLUMNS if selected_columns.blank? %>
   <% columns.each_with_index do |column, i| %>
     <%= check_box_tag 'settings[dmsf_columns][]', column, selected_columns.include?(column), id: "dmsf_column_#{i}" %>
+    <%= l("label_column_#{column}").capitalize %>
+    <br>
+  <% end %>
+  <% columns = cfs.map{ |c| c.name }
+     columns.each_with_index do |column, i| %>
+    <%= check_box_tag 'settings[dmsf_columns][]', column, selected_columns.include?(column), id: "dmsf_column_#{i}" %>
     <%= h column.capitalize %>
-    <br/>
+    <br>
   <% end %>
 </p>

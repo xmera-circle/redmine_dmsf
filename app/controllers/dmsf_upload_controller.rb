@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -29,10 +29,10 @@ class DmsfUploadController < ApplicationController
   before_action :authorize_global, only: [:upload, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
   before_action :find_folder, except: [:upload, :commit, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
   before_action :permissions, except: [:upload, :commit, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
-  before_action :wiki, only: [:multi_upload, :upload_files]
 
-  helper :all
+  helper :custom_fields
   helper :dmsf_workflows
+  helper :dmsf
 
   accept_api_auth :upload, :commit
 
@@ -132,6 +132,7 @@ class DmsfUploadController < ApplicationController
 
   def commit_files_internal(commited_files)
     @files, failed_uploads = DmsfUploadHelper.commit_files_internal(commited_files, @project, @folder, self)
+    call_hook :dmsf_upload_controller_after_commit, { files: @files }
     respond_to do |format|
       format.js
       format.api  { render_validation_errors(failed_uploads) unless failed_uploads.empty? }
@@ -141,12 +142,8 @@ class DmsfUploadController < ApplicationController
 
   def find_folder
     @folder = DmsfFolder.visible.find(params[:folder_id]) if params.keys.include?('folder_id')
-  rescue DmsfAccessError
+  rescue RedmineDmsf::Errors::DmsfAccessError
     render_403
-  end
-
-  def wiki
-    @wiki = Setting.text_formatting != 'HTML'
   end
 
 end

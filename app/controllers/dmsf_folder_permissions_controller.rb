@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -25,6 +25,8 @@ class DmsfFolderPermissionsController < ApplicationController
   before_action :find_project
   before_action :authorize
   before_action :permissions
+
+  helper :dmsf
 
   def permissions
     render_403 unless DmsfFolder.permissions?(@dmsf_folder)
@@ -63,7 +65,7 @@ class DmsfFolderPermissionsController < ApplicationController
 
   def find_project
     @project = Project.visible.find_by_param(params[:project_id])
-  rescue DmsfAccessError
+  rescue RedmineDmsf::Errors::DmsfAccessError
     render_403
   rescue ActiveRecord::RecordNotFound
     render_404
@@ -71,7 +73,7 @@ class DmsfFolderPermissionsController < ApplicationController
 
   def find_folder
     @dmsf_folder = DmsfFolder.visible.find_by!(id: params[:dmsf_folder_id])
-  rescue DmsfAccessError
+  rescue RedmineDmsf::Errors::DmsfAccessError
     render_403
   rescue ActiveRecord::RecordNotFound
     render_404

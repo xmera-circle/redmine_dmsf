@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -73,12 +73,16 @@ class DmsfFile < ActiveRecord::Base
                 url: Proc.new { |o| { controller: 'dmsf_files', action: 'view', id: o } },
                 datetime: Proc.new { |o| o.updated_at },
                 author: Proc.new { |o| o.last_revision.user }
-
+  acts_as_watchable
   acts_as_searchable columns: ["#{table_name}.name", "#{DmsfFileRevision.table_name}.title", "#{DmsfFileRevision.table_name}.description", "#{DmsfFileRevision.table_name}.comment"],
     project_key: 'project_id',
     date_column: "#{table_name}.updated_at"
 
   before_create :default_values
+
+  def self.previews_storage_path
+    File.join Rails.root, 'tmp', 'dmsf_previews'
+  end
 
   def default_values
     if Setting.plugin_redmine_dmsf['dmsf_default_notifications'].present? && (!dmsf_folder || !dmsf_folder.system)
@@ -87,8 +91,11 @@ class DmsfFile < ActiveRecord::Base
   end
 
   def initialize(*args)
-    @project = nil
     super
+    @project = nil
+    if new_record?
+      self.watcher_user_ids = []
+    end
   end
 
   def self.storage_path
@@ -212,10 +219,16 @@ class DmsfFile < ActiveRecord::Base
   end
 
   def notify?
-    return true if notification
-    return true if dmsf_folder && dmsf_folder.notify?
-    return true if !dmsf_folder && project.dmsf_notification
-    false
+    notification || dmsf_folder&.notify? || (!dmsf_folder && project.dmsf_notification)
+  end
+
+  def get_all_watchers(watchers)
+    watchers.concat notified_watchers
+    if dmsf_folder
+      watchers.concat dmsf_folder.notified_watchers
+    else
+      watchers.concat project.notified_watchers
+    end
   end
 
   def notify_deactivate
@@ -243,17 +256,12 @@ class DmsfFile < ActiveRecord::Base
   end
 
   def move_to(project, folder)
-    if locked_for_user?
-      errors.add(:base, l(:error_file_is_locked))
-      Rails.logger.error l(:error_file_is_locked)
-      return false
-    end
     unless last_revision
-      errors.add(:base, l(:error_at_least_one_revision_must_be_present))
+      errors.add :base, l(:error_at_least_one_revision_must_be_present)
       Rails.logger.error l(:error_at_least_one_revision_must_be_present)
       return false
     end
-    source = "#{project.identifier}:#{dmsf_path_str}"
+    source = "#{self.project.identifier}:#{dmsf_path_str}"
     self.project = project
     self.dmsf_folder = folder
     new_revision = last_revision.clone
@@ -311,7 +319,7 @@ class DmsfFile < ActiveRecord::Base
       if File.exist? last_revision.disk_file
         FileUtils.cp last_revision.disk_file, new_revision.disk_file(false)
       end
-      new_revision.comment = l(:comment_copied_from, source: "#{self.project.identifier}: #{dmsf_path_str}")
+      new_revision.comment = l(:comment_copied_from, source: "#{self.project.identifier}:#{dmsf_path_str}")
       new_revision.custom_values = []
       last_revision.custom_values.each do |cv|
         v = CustomValue.new
@@ -461,30 +469,67 @@ class DmsfFile < ActiveRecord::Base
   end
 
   def text?
-    last_revision && Redmine::MimeType.is_type?('text', last_revision.disk_filename)
+    Redmine::MimeType.is_type?('text', last_revision&.disk_filename)
   end
 
   def image?
-    last_revision && Redmine::MimeType.is_type?('image', last_revision.disk_filename)
+    Redmine::MimeType.is_type?('image', last_revision&.disk_filename)
   end
 
   def pdf?
-    last_revision && (Redmine::MimeType.of(last_revision.disk_filename) == 'application/pdf')
+    Redmine::MimeType.of(last_revision&.disk_filename) == 'application/pdf'
   end
 
   def video?
-    last_revision && Redmine::MimeType.is_type?('video', last_revision.disk_filename)
+    Redmine::MimeType.is_type?('video', last_revision&.disk_filename)
   end
 
   def html?
-    last_revision && (Redmine::MimeType.of(last_revision.disk_filename) == 'text/html')
+    Redmine::MimeType.of(last_revision&.disk_filename) == 'text/html'
+  end
+
+  def office_doc?
+    case File.extname(last_revision&.disk_filename)
+    when  '.odt', '.ods', '.odp', '.odg', # LibreOffice
+          '.doc', '.docx', '.docm', '.xls', '.xlsx', '.xlsm', '.ppt', '.pptx', '.pptm',  # MS Office
+          '.rtf' # Universal
+          true
+    else
+      false
+    end
   end
 
   def disposition
     (image? || pdf? || video? || html?) ? 'inline' : 'attachment'
   end
 
-  def preview(limit)
+  def thumbnailable?
+    image? && Redmine::Thumbnail.convert_available?
+  end
+
+  def previewable?
+    office_doc? && RedmineDmsf::Preview.office_available?
+  end
+
+  # Deletes all previews
+  def self.clear_previews
+    Dir.glob(File.join(DmsfFile.previews_storage_path, '*.pdf')).each do |file|
+      File.delete file
+    end
+  end
+
+  def pdf_preview
+    return '' unless previewable?
+    target = File.join(DmsfFile.previews_storage_path, "#{File.basename(last_revision&.disk_file.to_s, '.*')}.pdf")
+    begin
+      RedmineDmsf::Preview.generate last_revision&.disk_file.to_s, target
+    rescue => e
+      Rails.logger.error "An error occurred while generating preview for #{last_revision&.disk_file} to #{target}\nException was: #{e.message}"
+      ''
+    end
+  end
+
+  def text_preview(limit)
     result = +'No preview available'
     if text?
       begin
@@ -562,7 +607,7 @@ class DmsfFile < ActiveRecord::Base
       target = File.join(Attachment.thumbnails_storage_path, "#{id}_#{last_revision.digest}_#{size}.thumb")
 
       begin
-        Redmine::Thumbnail.generate(last_revision.disk_file.to_s, target, size)
+        Redmine::Thumbnail.generate last_revision.disk_file.to_s, target, size
       rescue => e
         Rails.logger.error "An error occured while generating thumbnail for #{last_revision.disk_file} to #{target}\nException was: #{e.message}"
         nil
@@ -579,6 +624,16 @@ class DmsfFile < ActiveRecord::Base
       end
     end
     l(:title_unlock_file)
+  end
+
+  def container
+    if dmsf_folder&.system && dmsf_folder.title.match(/(^\d+)/)
+      issue_id = $1
+      parent = dmsf_folder.dmsf_folder
+      if parent && parent.title.match(/^\.(.+)s/)
+        $1.constantize.visible.find_by(id: issue_id)
+      end
+    end
   end
 
 end

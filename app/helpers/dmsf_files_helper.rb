@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -25,8 +25,8 @@ module DmsfFilesHelper
     # If there is <p> tag, the text is moved one column to the right by Redmin's CSS. A new line causes double new line.
     text.gsub! '<p>', ''
     text.gsub! '</p>', ''
-    text.gsub! "\n\n", '<br/>'
-    text.gsub "\n\t", '<br/>'
+    text.gsub! "\n\n", '<br>'
+    text.gsub "\n\t", '<br>'
   end
 
 end

@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -20,9 +20,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class DmsfWorkflow < ActiveRecord::Base
+<<<<<<< HEAD
   
   
   has_many :dmsf_workflow_steps, -> { order(step: :asc, operator: :desc) }, dependent: :destroy
+=======
+
+  has_many :dmsf_workflow_steps, -> { order(step: :asc) }, dependent: :destroy
+>>>>>>> release-3.0.12-xmr
   belongs_to :author, class_name: 'User'
 
   scope :sorted, lambda { order(name: :asc) }
@@ -54,6 +59,27 @@ class DmsfWorkflow < ActiveRecord::Base
     when DmsfWorkflow::STATE_OBSOLETE
       l(:title_obsolete)
     end
+  end
+
+  def self.workflow_info(workflow, workflow_id, revision_id)
+    text = ''
+    names = ''
+    dmsf_workflow = DmsfWorkflow.find_by(id: workflow_id)
+    if dmsf_workflow
+      assignments = dmsf_workflow.next_assignments(revision_id)
+      if assignments.any?
+        user_ids = assignments.map{ |a| a.user_id }
+        users = User.where(id: user_ids).all
+        names = users.map{ |u| u.name }.join(',')
+        workflow_step_id = assignments.first[:dmsf_workflow_step_id]
+        if workflow_step_id
+          step = DmsfWorkflowStep.find_by_id(workflow_step_id)
+          text = step.name if(step&.name.present?)
+        end
+      end
+    end
+    text = DmsfWorkflow.workflow_str(workflow.to_i) if(text.blank?)
+    [text, names]
   end
 
   def participiants
@@ -212,7 +238,7 @@ class DmsfWorkflow < ActiveRecord::Base
     assignments = next_assignments(revision.id)
     recipients = assignments.collect{ |a| a.user }
     recipients.uniq!
-    recipients = recipients & DmsfMailer.get_notify_users(project, [revision.dmsf_file], true)
+    recipients = recipients & DmsfMailer.get_notify_users(project, revision.dmsf_file, true)
     DmsfMailer.deliver_workflow_notification(
         recipients,
         self,
@@ -224,8 +250,8 @@ class DmsfWorkflow < ActiveRecord::Base
         assignments.first&.dmsf_workflow_step)
     if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients'] && controller
       unless recipients.blank?
-        to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
-        to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
+        to = recipients.collect{ |r| r.name }.first(Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i).join(', ')
+        to << ((recipients.count > Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i) ? ',...' : '.')
         controller.flash[:warning] = l(:warning_email_notifications, to: to)
       end
     end

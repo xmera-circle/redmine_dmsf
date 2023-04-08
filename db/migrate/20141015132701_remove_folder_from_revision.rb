@@ -2,7 +2,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ class RemoveFolderFromRevision < ActiveRecord::Migration[4.2]
     DmsfFileRevision.find_each do |revision|
       if revision.dmsf_file
         revision.dmsf_folder_id = revision.dmsf_file.dmsf_folder_id
-        revision.save!
+        revision.save validate: false
       end
     end        
   end

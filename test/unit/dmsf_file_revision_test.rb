@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -129,40 +129,47 @@ class DmsfFileRevisionTest < RedmineDmsf::Test::UnitTest
   end
 
   def test_increase_version
+    # 1.0.0 -> 1.0.1
+    @revision1.major_version = 1
+    @revision1.minor_version = 0
+    @revision1.increase_version DmsfFileRevision::PATCH_VERSION
+    assert_equal 1, @revision1.major_version
+    assert_equal 0, @revision1.minor_version
+    assert_equal 1, @revision1.patch_version
     # 1.0 -> 1.1
     @revision1.major_version = 1
     @revision1.minor_version = 0
-    @revision1.increase_version(1)
+    @revision1.increase_version DmsfFileRevision::MINOR_VERSION
     assert_equal 1, @revision1.major_version
     assert_equal 1, @revision1.minor_version
     # 1.0 -> 2.0
     @revision1.major_version = 1
     @revision1.minor_version = 0
-    @revision1.increase_version(2)
+    @revision1.increase_version DmsfFileRevision::MAJOR_VERSION
     assert_equal 2, @revision1.major_version
     assert_equal 0, @revision1.minor_version
     # 1.1 -> 2.0
     @revision1.major_version = 1
     @revision1.minor_version = 1
-    @revision1.increase_version(2)
+    @revision1.increase_version DmsfFileRevision::MAJOR_VERSION
     assert_equal 2, @revision1.major_version
     assert_equal 0, @revision1.minor_version
     # A -> A.1
     @revision1.major_version = -('A'.ord)
     @revision1.minor_version = -(' '.ord)
-    @revision1.increase_version(1)
+    @revision1.increase_version DmsfFileRevision::MINOR_VERSION
     assert_equal -('A'.ord), @revision1.major_version
     assert_equal 1, @revision1.minor_version
     # A -> B
     @revision1.major_version = -('A'.ord)
     @revision1.minor_version = -(' '.ord)
-    @revision1.increase_version(2)
+    @revision1.increase_version DmsfFileRevision::MAJOR_VERSION
     assert_equal -('B'.ord), @revision1.major_version
     assert_equal -(' '.ord), @revision1.minor_version
     # A.1 -> B
     @revision1.major_version = -('A'.ord)
     @revision1.minor_version = 1
-    @revision1.increase_version(2)
+    @revision1.increase_version DmsfFileRevision::MAJOR_VERSION
     assert_equal -('B'.ord), @revision1.major_version
     assert_equal -(' '.ord), @revision1.minor_version
   end
@@ -220,12 +227,6 @@ class DmsfFileRevisionTest < RedmineDmsf::Test::UnitTest
     assert !@revision1.obsolete
     assert_equal 1, @revision1.errors.count
     assert @revision1.errors.full_messages.to_sentence.include?(l(:error_file_is_locked))
-  end
-
-  def test_minor_version_cannot_be_nil
-    @revision1.minor_version = nil
-    assert !@revision1.save
-    assert @revision1.errors.full_messages.to_sentence.include?('Minor version cannot be blank')
   end
 
   def test_major_version_cannot_be_nil

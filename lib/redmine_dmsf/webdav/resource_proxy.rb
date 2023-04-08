@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -20,8 +20,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-require 'dav4rack'
-
 module RedmineDmsf
   module Webdav
 
@@ -30,7 +28,7 @@ module RedmineDmsf
     # This is more of a factory approach of an object, class determines which class to
     # instantiate based on pathing information, it then populates @resource_c with this
     # object, and proxies calls made against class to it.
-    class ResourceProxy < DAV4Rack::Resource
+    class ResourceProxy < Dav4rack::Resource
 
       attr_reader :read_only
 

@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -57,7 +57,7 @@ class MyControllerTest < RedmineDmsf::Test::TestCase
       end
     end
   end
-  
+
   def test_page_with_open_locked_documents
     @request.session[:user_id] = @admin.id
     @admin.pref[:my_page_layout] = { 'top' => ['locked_documents'] }
@@ -66,7 +66,23 @@ class MyControllerTest < RedmineDmsf::Test::TestCase
     assert_response :success
     unless defined?(EasyExtensions)
       assert_select 'div#list-top' do
-        assert_select 'h3', { text: "#{l(:locked_documents)} (0/1)" }
+        assert_select 'h3', { text:
+          "#{l(:locked_documents)} (0 #{l(:label_number_of_folders).downcase} / 1 #{l(:label_number_of_documents).downcase})" }
+      end
+    end
+  end
+
+  def test_page_with_open_watched_documents
+    @jsmith.pref[:my_page_layout] = { 'top' => ['watched_documents'] }
+    @jsmith.pref.save!
+    @file1.add_watcher @jsmith
+    @folder1.add_watcher @jsmith
+    @project1.add_watcher @jsmith
+    get :page
+    unless defined?(EasyExtensions)
+      assert_response :success
+      assert_select 'div#list-top' do
+        assert_select 'h3', { text: "#{l(:label_dmsf_watched)} (2/1)" }
       end
     end
   end

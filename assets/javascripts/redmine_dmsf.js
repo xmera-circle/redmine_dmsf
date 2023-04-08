@@ -2,7 +2,7 @@
 *
 * Redmine plugin for Document Management System "Features"
 *
-* Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+* Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -57,7 +57,7 @@ function dmsfToggle(el, project_id, folder_id, url)
       if (expand) {
 
         // Display only children with expanded parent
-        m = $(tr).attr('class').match(/(\d+(p|f)) idnt/);
+        let m = $(tr).attr('class').match(/(\d+(p|f)) idnt/);
 
         if(m){
 
@@ -133,7 +133,7 @@ function dmsfExpandRows(project_id, folder_id, parentRow, url) {
       if( m && (data.indexOf(' ' +  m[1] + ' ') < 0)) {
 
         $(parentRow).removeClass('dmsf-expanded');
-	$(parentRow).find('div.dmsf-row-control').removeClass('row-control dmsf-row-control');
+	    $(parentRow).find('div.dmsf-row-control').removeClass('row-control dmsf-row-control');
 
         if(!$(parentRow).hasClass('dmsf-child')) {
 
@@ -142,7 +142,7 @@ function dmsfExpandRows(project_id, folder_id, parentRow, url) {
       }
       else {
         // Add child rows
-        eval(data);
+        return Function('"use strict";' + data)();
       }
   })
   .fail(function() {

@@ -1,8 +1,187 @@
 Changelog for Redmine DMSF
 ==========================
 
-2.4.12 *????-??-??*
+3.0.12-xmr unreleased
+------------------
+
+* New: Updates German translations
+
+3.0.12 2023-03-15
+------------------
+
+    Bug fixing
+
+* Bug: #1436 - Cannot upload new content
+
+3.0.11 2023-03-14
+------------------
+
+    Bug fixing
+
+3.0.10 *2023-03-10*
 -------------------
+
+    Maintenance release
+
+* Bug: #1433 - User's guide broken link
+* Bug: #1426 - Adds formatting helper to all editors
+
+3.0.9 *2023-02-10*
+------------------
+
+    Sorting
+    Filtering by custom fields
+    Download notifications
+    Embedded help
+    DMS macros in wiki toolbar
+
+* Bug: #1425 - Default sorting is not set
+* Bug: #1424 - Internal error while opening Settings page
+* Bug: #1423 - Check for Illegal characters in file name
+* New: #1421 - Help
+* Bug: #1419 - Missing checksum
+* Bug: #1417 - Query::StatementInvalid raised in dmsf#show when filtering custom fields with PostgreSQL database
+* New: #1414 - An empty minor version
+* Bug: #1413 - Vim edit through webdav causes lose of all file versions besides last.
+* Bug: #1408 - Lost attachment 2
+* New: #513  - Email Notification when someone downloads a file
+* New: #239  - Easy Document link macro creation 
+
+3.0.7 *2022-11-01*
+------------------
+
+    AlphaNode's plugins compatibility
+    Approval workflow enhancement
+    Global search
+    New filters
+
+* Bug: #1407 - Error on "New step or New Approver"
+* New: #1247 - Global DMS view - Search by title does not work
+* New: #1192 - Suggest to show Approval option in list view instead hiding it in second layer menu being folded
+* New: #1124 - New UI: Add additional filter "Locked documents"
+* New: #1118 - How can I add 'Comment' column in the file list view?
+* Bug: #880  - Removing steps of approval_workflows causes data corruption
+
+3.0.6 *2022-09-20*
+------------------
+
+    Default query
+    GitHub CI
+    PosgrSQL compatibility
+
+* Bug: #1401 - Duplicated steps in "New step" form
+* Bug: #1399 - Open 'watched' folder throw internal error
+* Bug: #1397 - System folder is not deleted
+* New: #1396 - Repeatable rake task to sync documents
+* Bug: #1395 - Use custom fields in filter throw error 500
+* New: #1386 - Changing default file query
+
+3.0.5 *2022-08-20*
+------------------
+
+    Aproval wokflows notifications fix
+
+* Bug: #1394 - Email notifications for workflows are not sent
+
+3.0.4 *2022-08-19*
+-------------------
+
+    Version macro extension
+
+* Bug: #1392 - Issue #1388 patch
+* Bug: #1391 - Fix plugin name redmine_checklists
+* New: #1390 - Version of revision in wiki
+* Bug: #1388 - Custom field in DMS Columns
+* Bug: #1387 - Error in bundle with plugin custom table
+* Bug: #1385 - Wrong version when uploading a document via WebDAV
+* Bug: #1384 - Checksum is always the same via WebDAV type: bug
+
+3.0.3 *2022-07-19*
+-------------------
+
+    Security enhancement
+    Persian localisation
+    DMSF images in PDF export
+
+* Bug: #1382 - Unable to copy or move files
+* Bug: #1381 - Update fa.yml
+* Bug: #1380 - Custom queries and Trash bin
+* New: #1377 - Create fa.yml
+* New: #1375 - Hide the link in the TOP menu
+* Bug: #1374 - Possible XSS Vulnerability by using eval()
+* Bug: #1373 - Cross-site Scripting risk in Select2 < 4.0.8
+* Bug: #1372 - Replacing view_dmsf_file_path references with view_dmsf_file_url
+* Bug: #1371 - Mail rendering of DMSF file link reports undefined method error
+* Bug: #1369 - Translate settings column names
+* Bug: #1368 - Wrong translation in Persian and probably some other languages
+* New: #1082 - More than one ID in image rendering macros
+* Bug:  #903 - Little bug in PDF image export (Redmine 3.4.6)
+
+3.0.2 *2022-06-17*
+-------------------
+
+    MS SQL compatibility
+    RedmineUp's plugins compatibility
+
+* Bug: #1366 - 404 Not found while restoring documents from the trash bin
+* Bug: #1365 - No journal when delete / de-attach document
+* Bug: #1364 - Error while loading /settings
+* Bug: #1363 - Conflict with plugin redmine_issue_evm
+* Bug: #1352 - Error while loading list DMSF
+
+3.0.1 *2022-06-03*
+-------------------
+
+    Inline displaying of office documents
+    Custom fields displayed by folders
+    Compatibility with RedmineUp's plugins
+    Compatibility with Issue EVM plugin
+    New hooks
+
+* Bug: #1363 - Conflict with plugin redmine_issue_evm
+* New: #1361 - Progress bar modal when handling document upload
+* New: #1360 - Use Redmine's temp folder
+* New: #1359 - Add download icon
+* New: #1358 - Remove the magnifier icon
+* Bug: #1357 - Check convert available by thumbnails
+* Bug: #1356 - Remove a drive letter when using WebDAV in Windows
+* New: #1355 - Hook Request
+* Bug: #1354 - Redmine Configuration Page not working when DMSF is installed together with RedmineUp resources plugin
+* New: #1353 - Cannot preview my doc
+* Bug: #1350 - Internal Error while opening settings
+* Bug: #1349 - QueryColumn - Error
+* New: #1348 - Custom Fields not shown on folder level
+* Bug: #1345 - Conflict with RedmineUP invoice plugin
+* New: #1227 - Check if a document contains a signature
+* New: #1203 - Suggest to add document preview 
+
+3.0.0 *2022-04-28*
+-------------------
+
+    Redmine 5.0
+    Watchable documents and folders (The original DMS notifications ar off as default. They can be activated in Administration->Settings->Email notifications.)
+    Patch version
+
+* New: #1344 - Need support Redmine 5
+* Bug: #1343 - New content input field improvement
+* Bug: #1340 - Using plugin with Redmine SVN trunk
+* Bug: #1339 - Not show action menu to unlock folder
+* Bug: #1338 - move/copy folder from project1 to project2
+* New: #1337 - Project's plus menu extension
+* New: #1336 - New file menu item
+* New: #1333 - Memory problem in 'My page' with 'Open aprovals' option
+* Bug: #1330 - Trouble with dmsff macro
+* Bug: #1329 - Problem moving a folder with locked files.
+* New: #1328 - Update de.yml
+* New: #1323 - Fast links for Copy/Move
+* Bug: #1318 - easy_gantt compatibility
+* Bug: #1317 - Wrong links to a project
+* Bug: #1314 - Fix HTTP Status 500 when emailing document link
+* Bug: #1313 - Impossible to use macro in the revision comment field.
+* New: #1312 - Update _log.html.erb
+* Bug: #1311 - Deleting the link between files and issues
+* New: #1151 - Add document revision.patch_version
+* New:  #557 - Watch Documents type: enhancement
 
 2.4.11 *2021-11-03*
 -------------------
@@ -789,7 +968,7 @@ IMPORTANT
 1.4.1: *2012-06-15*
 -------------------
 
-* New: DAV4Rack requirement added (Gemfile makes reference to github repository for latest release).
+* New: Dav4rack requirement added (Gemfile makes reference to github repository for latest release).
 * New: Webdav functionality included, additional administrative settings added
 * Bug: #2 - extended xapian search fixed with Rails 3 compatible code.
 

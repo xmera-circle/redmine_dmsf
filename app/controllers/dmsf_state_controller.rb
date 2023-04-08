@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -44,6 +44,7 @@ class DmsfStateController < ApplicationController
     if Setting.plugin_redmine_dmsf['dmsf_act_as_attachable']
       @project.update_attribute :dmsf_act_as_attachable, params[:act_as_attachable]
     end
+    @project.update_attribute :default_dmsf_query_id, params[:default_dmsf_query]
     redirect_to settings_project_path(@project, tab: 'dmsf')
   end
   

@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -232,9 +232,9 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
 
   def test_findn_file_by_name
     assert DmsfFile.find_file_by_name(@project1, nil, 'test.txt')
-    assert_nil DmsfFile.find_file_by_name(@project1, nil, 'test.odt')
+    assert_nil DmsfFile.find_file_by_name(@project1, nil, 'test.ods')
     assert DmsfFile.find_file_by_name(@issue1, nil, 'test.pdf')
-    assert_nil DmsfFile.find_file_by_name(@issue1, nil, 'test.odt')
+    assert_nil DmsfFile.find_file_by_name(@issue1, nil, 'test.ods')
   end
 
   def test_storage_path
@@ -273,6 +273,28 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
     assert_equal @admin.name, @file2.locked_by
     # Unlocked file
     assert_equal '', @file1.locked_by
+  end
+
+  def test_watchable
+    @file1.add_watcher @jsmith
+    assert @file1.watched_by?(@jsmith)
+  end
+
+  def test_office_doc
+    assert @file13.office_doc?
+  end
+
+  def test_previewable
+    if RedmineDmsf::Preview.office_available?
+      assert @file13.previewable?
+    end
+  end
+
+  def test_pdf_preview
+    if RedmineDmsf::Preview.office_available?
+      assert_not_empty @file13.pdf_preview
+    end
+    assert_empty @file1.pdf_preview
   end
 
 end

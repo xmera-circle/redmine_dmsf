@@ -4,7 +4,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -121,6 +121,7 @@ ko:
   label_size: 크기
   heading_new_revision: 새로운 수정
   option_version_same: 동일한
+  option_version_patch: Patch
   option_version_minor: 중요하지 않은
   option_version_major: 중요한
   option_version_custom: 임의의
@@ -340,6 +341,7 @@ ko:
 
   locked_documents: 잠긴 문서
   open_approvals: 승인 열기
+  watched_documents: Watched documents
 
   error_maximum_upload_filecount: "%{filecount}가 넘는 파일을 업로드 할 수 없습니다."
 
@@ -377,10 +379,6 @@ ko:
   label_dmsf_attachments: DMS 첨부
   label_basic_attachments: 기본 첨부
 
-  label_tmpdir: 임시 파일 경로
-  error_file_tmpdir_does_not_exist: "임시 파일 경로가 존재하지 않거나 만들 수 없습니다"
-  error_tmpfile_can_not_be_created: "임시 파일 경로 디렉터리 내에 파일을 만들 수 없습니다"
-
   label_email_from_override: 송신
   text_email_from_override: 로그인한 사용자
   label_email_reply_to: 회신
@@ -392,7 +390,8 @@ ko:
 
 
   label_dmsf_fast_links: 빠른 링크
-  text_dmsf_fast_links_info: 링크 생성을 더 빨리할 수 있도록 링크 생성 시에 대상 폴더의 식별자를 직접 입력할 수 있게 됩니다.
+  text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links or moving files
+    or folders in order to speed up the process of creating links.
 
   label_dmsf_permissions: Allow access only to
   label_inherited_permissions: Inherited Access for
@@ -405,6 +404,7 @@ ko:
   field_first_at: 처음
   field_last_at: 마지막
   field_size: 크기
+  field_locked: Locked
 
   label_add_width: Add with
 
@@ -423,6 +423,52 @@ ko:
   title_assignment_minor: Assignment not allowed, minor must be zero
   title_start_minor: Start not allowed, minor must be zero
   title_approval_minor: Approval not allowed, minor must be zero
+
+  label_project_watchers: Watchers
+  label_dmsf_folder_watchers: Watchers
+  label_dmsf_file_watchers: Watchers
+  label_dmsf_watched: Watched documents
+  dmsf_legacy_notifications: Legacy DMS notifications
+  permission_view_dmsf_folder_watchers: View folder's watchers
+  permission_add_dmsf_folder_watchers: Add folder's watchers
+  permission_delete_dmsf_folder_watchers: Delete folder's watchers
+  permission_view_dmsf_file_watchers: View document's watchers
+  permission_add_dmsf_file_watchers: Add document's watchers
+  permission_delete_dmsf_file_watchers: Delete document's watchers
+  permission_view_project_watchers: View project's watchers
+  permission_add_project_watchers: Add project's watchers
+  permission_delete_project_watchers: Delete project's watchers
+  label_dmsf_new_top_level_document: New top level DMS document
+  label_dmsf_new_top_level_folder: New top level DMS folder
+
+  label_dmsf_max_notification_receivers_info: Maximum notification receivers info
+  note_dmsf_max_notification_receivers_info: Limits maximum number of displayed email notification receivers.
+  label_dmsf_office_bin: Libreoffice binary
+  note_dmsf_office_bin: A binary to convert office documents to PDF format and provide their preview. If you want
+    to prevent previews of office documents, put an empty string here. After a change, you might have to restart the
+    application to take it any effect.
+  note_dmsf_office_bin_not_available: "LibreOffice's command line binary '%{value}' not available"
+
+  label_dmsf_columns: DMS Columns
+  label_column_id: ID
+  label_column_title: 제목
+  label_column_size: 크기
+  label_column_modified: 변경됨
+  label_column_version: 버전
+  label_column_workflow: 업무흐름
+  label_column_author: 저자
+  label_column_description: 설명
+  label_column_comment: Comment
+
+  label_dmsf_global_menu_disabled: Global DMS menu disabled
+  note_dmsf_global_menu_disabled: If yes, DMS menu item is not present in the top menu.
+  error_dmsf_workflow_assigned: Approval workflow in use can be neither edited nor deleted.
+
+  label_empty_minor_version_by_default: Empty minor version by default
+  text_email_doc_downloaded_subject: Documents downloaded
+  text_email_doc_downloaded: has just downloaded documents of
+  field_default_dmsf_query: Default DMS query
+  field_receive_download_notification: Receive download notifications
 
   easy_pages:
     modules:

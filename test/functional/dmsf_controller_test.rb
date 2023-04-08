@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -200,6 +200,8 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
     assert_select 'fieldset#filters'
     # Options
     assert_select 'fieldset#options'
+    # Options - no "Group by"
+    assert_select 'select#group_by', count: 0
     # The main table
     assert_select 'table.dmsf'
     # CSV export
@@ -235,6 +237,16 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
     assert_select 'a', text: @file10.title, count: 0
   end
 
+  def test_show_filters_custom_field
+    get :show, params: { id: @project1.id, set_filter: '1', f: ['cf_21', ''], op: { 'cf_21' => '=' },
+                         v: { 'cf_21' => ['User documentation']} }
+    assert_response :success
+    # Folder 1 with Tag=User documentation
+    assert_select 'a', text: @folder1.title
+    # Other document/folders are not present
+    assert_select 'a', text: @file10.title, count: 0
+  end
+
   def test_show_without_file_manipulation
     @role_manager.remove_permission! :file_manipulation
     get :show, params: { id: @project1.id }
@@ -253,6 +265,24 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
     assert @project1 != @folder3.project
     get :show, params: { id: @project1.id, folder_id: @folder3.id }
     assert_response :not_found
+  end
+
+  def test_folder_link_to_folder
+    get :show, params: { id: @link1.project_id, folder_id: @link1.dmsf_folder_id }
+    assert_response :success
+    assert_select 'a', text: @link1.title, count: 1
+    assert_select 'a[href$=?]', "/projects/#{@link1.target_project.identifier}/dmsf?folder_id=#{@link1.target_folder.id}",
+                  count: 2 # Two because of folder1 and folder1_link
+  end
+
+  def test_folder_link_to_project
+    @link1.target_project_id = @project2.id
+    @link1.target_id = nil
+    assert @link1.save
+    get :show, params: { id: @link1.project_id, folder_id: @link1.dmsf_folder_id }
+    assert_response :success
+    assert_select 'a', text: @link1.title, count: 1
+    assert_select 'a[href$=?]', "/projects/#{@project2.identifier}/dmsf", count: 1
   end
 
   def test_new_forbidden
@@ -299,7 +329,7 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
   end
 
   def test_entries_email
-    zip_file = Tempfile.new('test', DmsfHelper::temp_dir)
+    zip_file = Tempfile.new('test', File.join(Rails.root, 'tmp'))
     get :entries_email, params:  { id: @project1, email:
         {
           to: 'to@test.com', from: 'from@test.com', subject: 'subject', body: 'body', expired_at: '2015-01-01',
@@ -363,16 +393,23 @@ class DmsfControllerTest < RedmineDmsf::Test::TestCase
     with_settings plugin_redmine_dmsf: {'dmsf_projects_as_subfolders' => '1'} do
       get :show, params: { id: @project1.id }
       assert_response :success
-      # @project3 is as a sub-folder
-      assert_select "tr##{@project3.id}pspan", count: 1
+      # @project5 is as a sub-folder
+      assert_select "tr##{@project5.id}pspan", count: 1
     end
   end
 
   def test_show_without_sub_projects
     get :show, params: { id: @project1.id }
     assert_response :success
-    # @project3 is not as a sub-folder
-    assert_select "tr##{@project3.id}pspan", count: 0
+    # @project5 is not as a sub-folder
+    assert_select "tr##{@project5.id}pspan", count: 0
+  end
+
+  def test_show_default_sort_column
+    get :show, params: { id: @project1.id }
+    assert_response :success
+    # The default column Title's header is displayed as sorted '^'
+    assert_select 'a.icon-sorted-desc', text: l(:label_column_title)
   end
 
   def test_index

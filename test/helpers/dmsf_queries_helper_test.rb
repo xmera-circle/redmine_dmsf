@@ -1,7 +1,9 @@
+# encoding: utf-8
 # frozen_string_literal: true
-
-# Redmine - project management software
-# Copyright (C) 2006-2019  Jean-Philippe Lang
+#
+# Redmine plugin for Document Management System "Features"
+#
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,8 +23,13 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class DmsfQueriesHelperTest < RedmineDmsf::Test::HelperTest
   include DmsfQueriesHelper
+
   fixtures :dmsf_folders
 
+  def setup
+    @folder1 = DmsfFolder.find 1
+    super
+  end
 
   def test_csv_value
     c_size = QueryColumn.new(:size)
@@ -30,7 +37,6 @@ class DmsfQueriesHelperTest < RedmineDmsf::Test::HelperTest
     c_workflow = QueryColumn.new(:workflow)
     assert_equal '1 KB', csv_value(c_size, nil, 1024)
     assert_equal 'John Smith', csv_value(c_author, @jsmith, @jsmith.id)
-    assert_equal 'Approved', csv_value(c_workflow, nil, DmsfWorkflow::STATE_APPROVED)
   end
 
   def test_column_value

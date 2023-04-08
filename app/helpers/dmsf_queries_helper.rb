@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -122,7 +122,12 @@ module DmsfQueriesHelper
           tag = "<span class=\"dmsf-expander\" onclick=\"dmsfToggle(this, '#{item.id}', null,'#{escape_javascript(path)}')\"></span>".html_safe + tag
           tag = content_tag('div', tag, class: 'row-control dmsf-row-control')
         end
-        tag + content_tag('div', item.filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
+        tag += content_tag('div', item.filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
+        if item.project.watched_by?(User.current)
+          tag += link_to('', watch_path(object_type: 'project', object_id: item.project.id), title: l(:button_unwatch),
+                         method: 'delete', class: 'icon icon-fav')
+        end
+        tag
       when 'folder'
         if item&.deleted?
           tag = content_tag('span', value, class: 'icon icon-folder')
@@ -139,7 +144,12 @@ module DmsfQueriesHelper
             tag = content_tag('div', tag, class: 'row-control dmsf-row-control')
           end
         end
-        tag + content_tag('div', item.filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
+        tag += content_tag('div', item.filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
+        if !item&.deleted? && item.watched_by?(User.current)
+          tag += link_to('', watch_path(object_type: 'dmsf_folder', object_id: item.id), title: l(:button_unwatch),
+                         method: 'delete', class: 'icon icon-fav')
+        end
+        tag
       when 'folder-link'
         if item&.deleted?
           tag = content_tag('span', value, class: 'icon icon-folder')
@@ -159,7 +169,7 @@ module DmsfQueriesHelper
           file_view_url = url_for({ controller: :dmsf_files, action: 'view', id: (item.type == 'file') ? item.id : item.revision_id })
           content_type = Redmine::MimeType.of(value)
           content_type = 'application/octet-stream' if content_type.blank?
-          tag = link_to(h(value), file_view_url, target: '_blank',
+          tag = link_to(h(value), file_view_url, target: '_blank', rel: 'noopener',
             class: "icon icon-file #{DmsfHelper.filetype_css(item.filename)}",
             'data-downloadurl': "#{content_type}:#{h(value)}:#{file_view_url}")
           unless filter_any?
@@ -169,12 +179,17 @@ module DmsfQueriesHelper
         member = Member.find_by(user_id: User.current.id, project_id: item.project_id)
         revision = DmsfFileRevision.find_by(id: item.customized_id)
         filename = revision ? revision.formatted_name(member) : item.filename
-        tag + content_tag('div', filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
+        tag += content_tag('div', filename, class: 'dmsf-filename', title: l(:title_filename_for_download))
+        if (item.type == 'file') && !item&.deleted? && revision.dmsf_file&.watched_by?(User.current)
+          tag += link_to('', watch_path(object_type: 'dmsf_file', object_id: item.id), title: l(:button_unwatch),
+                         method: 'delete', class: 'icon icon-fav')
+        end
+        tag
       when 'url-link'
         if item&.deleted?
           tag = content_tag('span', value, class: 'icon dmsf-icon-link')
         else
-          tag = link_to(h(value), item.filename, target: '_blank', class: 'icon dmsf-icon-link')
+          tag = link_to(h(value), item.filename, target: '_blank', rel: 'noopener', class: 'icon dmsf-icon-link')
           unless filter_any?
             tag = "<span class=\"dmsf-expander\"></span>".html_safe + tag
           end
@@ -193,7 +208,8 @@ module DmsfQueriesHelper
           else
             url = log_dmsf_workflow_path(project_id: item.project_id, id: item.workflow_id, dmsf_link_id: item.id)
           end
-          link_to h(DmsfWorkflow.workflow_str(value.to_i)), url, remote: true
+          text, names = DmsfWorkflow.workflow_info(item.workflow, item.workflow_id, item.revision_id)
+          link_to h(text), url, remote: true, title: names
         else
           h(DmsfWorkflow.workflow_str(value.to_i))
         end
@@ -210,7 +226,12 @@ module DmsfQueriesHelper
     when :size
       ActiveSupport::NumberHelper.number_to_human_size value
     when :workflow
-      DmsfWorkflow.workflow_str value.to_i
+      if value
+        text, names = DmsfWorkflow.workflow_info(object.workflow, object.workflow_id, object.revision_id)
+        text
+      else
+        super column, object, value
+      end
     when :author
       if value
         user = User.find_by(id: value)

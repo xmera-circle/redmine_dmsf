@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,7 +19,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-require 'dav4rack'
+require File.dirname(__FILE__) + '/../../dav4rack'
+require File.dirname(__FILE__) + '/resource_proxy'
 
 module RedmineDmsf
   module Webdav
@@ -31,7 +32,7 @@ module RedmineDmsf
         path = '/dmsf/webdav'
         @dav_app = Rack::Builder.new{
           map path do
-            run DAV4Rack::Handler.new(
+            run Dav4rack::Handler.new(
               root_uri_path: path,
               resource_class: RedmineDmsf::Webdav::ResourceProxy,
               log_to: Rails.logger,

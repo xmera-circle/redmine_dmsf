@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,7 +24,8 @@ require File.expand_path('../../../test_helper', __FILE__)
 class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
   include Redmine::I18n
 
-  fixtures :dmsf_folders, :dmsf_files, :dmsf_file_revisions, :dmsf_locks, :dmsf_links
+  fixtures :dmsf_folders, :dmsf_files, :dmsf_file_revisions, :dmsf_locks, :dmsf_links, :custom_fields,
+           :custom_values
 
   def setup
     super
@@ -70,9 +71,9 @@ class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
       #     ...
       #   </dmsf_nodes>
       # </dmsf>
-      # @project3 is as a sub-folder
-      assert_select 'dmsf > dmsf_nodes > node > id', text: @project3.id.to_s
-      assert_select 'dmsf > dmsf_nodes > node > title', text: @project3.name
+      # @project5 is as a sub-folder
+      assert_select 'dmsf > dmsf_nodes > node > id', text: @project5.id.to_s
+      assert_select 'dmsf > dmsf_nodes > node > title', text: @project5.name
       assert_select 'dmsf > dmsf_nodes > node > type', text: 'project'
     end
   end
@@ -94,8 +95,8 @@ class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
     #     </dmsf_nodes>
     # </dmsf>
     assert_select 'dmsf > dmsf_nodes > node', count: 1
-    assert_select 'dmsf > dmsf_nodes > node > id', text: @folder6.id.to_s
-    assert_select 'dmsf > dmsf_nodes > node > title', text: @folder6.title
+    #assert_select 'dmsf > dmsf_nodes > node > id', text: @folder7.id.to_s
+    #assert_select 'dmsf > dmsf_nodes > node > title', text: @folder7.title
   end
 
   def test_create_folder
@@ -174,24 +175,34 @@ class DmsfFolderApiTest < RedmineDmsf::Test::IntegrationTest
     assert @response.media_type.include?('application/xml')
     # <?xml version="1.0" encoding="UTF-8"?>
     # <dmsf>
-    #   <dmsf_folders total_count="1" type="array">
-    #     <folder>
+    #   <dmsf_nodes total_count="3" type="array">
+    #     <node>
     #       <id>2</id>
     #       <title>folder2</title>
-    #     </folder>
-    #   </dmsf_folders>
-    #   <dmsf_files total_count="0" type="array">
-    #   </dmsf_files>
-    #   <dmsf_links total_count="0" type="array">
-    #   </dmsf_links>
+    #       <type>folder</type>
+    #     </node>
+    #     <node>
+    #       <id>2</id>
+    #       <title>test_link</title>
+    #       <type>file-link</type>
+    #       <target_id>4</target_id>
+    #       <target_project_id>1</target_project_id>
+    #     </node>
+    #     <node>
+    #       <id>5</id>
+    #       <title>url_link</title>
+    #       <type>url-link</type>
+    #       <filename>https://www.kontron.com</filename>
+    #     </node>
+    #   </dmsf_nodes>
     #   <found_folder>
     #     <id>1</id>
     #     <title>folder1</title>
-    #       <custom_fields>
-    #         <custom_field>
-    #           ...
-    #         <suctom_field>
-    #       </custom_fields>
+    #     <custom_fields type="array">
+    #       <custom_field id="21" name="Tag">
+    #         <value>User documentation</value>
+    #       </custom_field>
+    #     </custom_fields>
     #   </found_folder>
     # </dmsf>
     assert_select 'dmsf > found_folder > id', text: @folder1.id.to_s

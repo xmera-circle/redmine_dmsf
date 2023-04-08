@@ -3,7 +3,7 @@
 #
 # Redmine plugin for Document Management System "Features"
 #
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -32,6 +32,8 @@ class DmsfLinksController < ApplicationController
   protect_from_forgery except: :new
 
   accept_api_auth :create
+
+  helper :dmsf
 
   def permissions
     if @dmsf_link
@@ -110,7 +112,7 @@ class DmsfLinksController < ApplicationController
           params[:dmsf_link][:target_folder_id]) ? params[:dmsf_link][:target_folder_id].to_i : nil
         @dmsf_link.target_type = DmsfFolder.model_name.to_s
       end
-      @dmsf_link.name = params[:dmsf_link][:name]
+      @dmsf_link.name = params[:dmsf_link][:name].scrub.strip
       result = @dmsf_link.save
       if result
         flash[:notice] = l(:notice_successful_create)

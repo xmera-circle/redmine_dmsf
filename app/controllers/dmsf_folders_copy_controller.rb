@@ -4,7 +4,7 @@
 # Redmine plugin for Document Management System "Features"
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -31,10 +31,16 @@ class DmsfFoldersCopyController < ApplicationController
 
   accept_api_auth :copy, :move
 
+  helper :dmsf
+
   def new
-    @projects = DmsfFolder.allowed_target_projects_on_copy
-    @folders = DmsfFolder.directory_tree(@target_project, @folder)
-    @target_folder = DmsfFolder.visible.find(params[:target_folder_id]) unless params[:target_folder_id].blank?
+    member = Member.find_by(project_id: @project.id, user_id: User.current.id)
+    @fast_links = member && member.dmsf_fast_links
+    unless @fast_links
+      @projects = DmsfFolder.allowed_target_projects_on_copy
+      @folders = DmsfFolder.directory_tree(@target_project, @folder)
+      @target_folder = DmsfFolder.visible.find(params[:target_folder_id]) unless params[:target_folder_id].blank?
+    end
     @back_url = params[:back_url]
     render layout: !request.xhr?
   end
@@ -87,11 +93,11 @@ class DmsfFoldersCopyController < ApplicationController
   def find_folder
     raise ActiveRecord::RecordNotFound unless DmsfFolder.where(id: params[:id]).exists?
     @folder = DmsfFolder.visible.find params[:id]
-    raise DmsfAccessError if @folder.locked_for_user?
+    raise RedmineDmsf::Errors::DmsfAccessError if @folder.locked_for_user?
     @project = @folder.project
   rescue ActiveRecord::RecordNotFound
     render_404
-  rescue DmsfAccessError
+  rescue RedmineDmsf::Errors::DmsfAccessError
     render_403
   end
 
@@ -105,6 +111,7 @@ class DmsfFoldersCopyController < ApplicationController
       target_folder_id = params[:dmsf_file_or_folder][:target_folder_id]
       @target_folder = DmsfFolder.find(target_folder_id)
       raise ActiveRecord::RecordNotFound unless DmsfFolder.visible.where(id: target_folder_id).exists?
+      @target_project = @target_folder&.project
     end
   rescue ActiveRecord::RecordNotFound
     render_404
@@ -119,9 +126,9 @@ class DmsfFoldersCopyController < ApplicationController
     end
     if (@target_folder && (@target_folder.locked_for_user? || !DmsfFolder.permissions?(@target_folder, false))) ||
       !@target_project.allows_to?(:folder_manipulation)
-      raise DmsfAccessError
+      raise RedmineDmsf::Errors::DmsfAccessError
     end
-  rescue DmsfAccessError
+  rescue RedmineDmsf::Errors::DmsfAccessError
     render_403
   end
 

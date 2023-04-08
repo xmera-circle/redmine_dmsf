@@ -5,7 +5,7 @@
 #
 # Copyright © 2011    Vít Jonáš <vit.jonas@gmail.com>
 # Copyright © 2012    Daniel Munn <dan.munn@munnster.co.uk>
-# Copyright © 2011-21 Karel Pičman <karel.picman@kontron.com>
+# Copyright © 2011-23 Karel Pičman <karel.picman@kontron.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
 
 module RedmineDmsf
   module Patches
-    module ProjectHelperPatch
+    module ProjectsHelperPatch
 
       ##################################################################################################################
       # Overridden methods
@@ -44,6 +44,7 @@ module RedmineDmsf
   end
 end
 
+# Apply the patch
 unless Redmine::Plugin.installed?(:easy_extensions)
-  ProjectsController.send :helper, RedmineDmsf::Patches::ProjectHelperPatch
+  ProjectsController.send :helper, RedmineDmsf::Patches::ProjectsHelperPatch
 end
