@@ -1,6 +1,11 @@
 Changelog for Redmine DMSF
 ==========================
 
+3.0.14-xmr *2023-08-18*
+-----------------------
+
+* Bug: unreported - Fixes dmsf links (see PR https://github.com/danmunn/redmine_dmsf/pull/1466)
+
 3.0.13 *2023-06-21*
 ------------------
 
