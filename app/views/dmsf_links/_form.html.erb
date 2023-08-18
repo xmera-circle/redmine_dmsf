@@ -112,40 +112,42 @@
 <% end %>
 
 <%= late_javascript_tag do %>
-  <%# Select2 extension, TODO: in case of a modal window, select2 makes problems %>
-  <% unless modal || @fast_links %>
-    $('#dmsf_link_target_project_id').select2();
-    $('#dmsf_link_target_folder_id').select2();
-    $('#dmsf_link_target_file_id').select2();
-  <% end %>
-  <%# Suggest a link's name when a file is selected %>
-  $('#dmsf_link_target_file_id').change(function () {
-    var linkName = $('#dmsf_link_name');
-    var name = linkName.val();
-    var dirName = $('#dmsf_link_target_folder_id option:selected').text().replace(/\./g, '')
-    var fileName = $('#dmsf_link_target_file_id option:selected').text().replace(/\./g, '')
-    if((name == '') || name == dirName) {
-      linkName.val(fileName);
-    }
-  });
-  <%# Suggest a link's name when a folder is selected %>
-  $('#dmsf_link_target_folder_id').change(function () {
-    var linkName = $('#dmsf_link_name');
-    var name = linkName.val();
-    var dirName = $('#dmsf_link_target_folder_id option:selected').text().replace(/\./g, '')
-    if(name == '') {
-      linkName.val(dirName);
-    }
-  });
-  <%# Internal/External link switch %>
-  $("input[name=external_link]:radio").change(function(){
-    $("#dmsf_link_internal").toggle();
-    $("#dmsf_link_external").toggle();
-    $("#dmsf_link_external_url").toggleClass('required', $(this).val());
-    var labelUrl = $('label[for="dmsf_link_external_url"]');
-    labelUrl.toggleClass('required', $(this).val());
-    if(labelUrl.find(".required").length == 0){
-      labelUrl.append('<span class="required"> *</span>');
-    }
+$(document).ready(function(){
+    <%# Select2 extension, TODO: in case of a modal window, select2 makes problems %>
+    <% unless modal || @fast_links %>
+      $('#dmsf_link_target_project_id').select2();
+      $('#dmsf_link_target_folder_id').select2();
+      $('#dmsf_link_target_file_id').select2();
+    <% end %>
+    <%# Suggest a link's name when a file is selected %>
+    $('#dmsf_link_target_file_id').change(function () {
+      var linkName = $('#dmsf_link_name');
+      var name = linkName.val();
+      var dirName = $('#dmsf_link_target_folder_id option:selected').text().replace(/\./g, '')
+      var fileName = $('#dmsf_link_target_file_id option:selected').text().replace(/\./g, '')
+      if((name == '') || name == dirName) {
+        linkName.val(fileName);
+      }
+    });
+    <%# Suggest a link's name when a folder is selected %>
+    $('#dmsf_link_target_folder_id').change(function () {
+      var linkName = $('#dmsf_link_name');
+      var name = linkName.val();
+      var dirName = $('#dmsf_link_target_folder_id option:selected').text().replace(/\./g, '')
+      if(name == '') {
+        linkName.val(dirName);
+      }
+    });
+    <%# Internal/External link switch %>
+    $("input[name=external_link]:radio").change(function(){
+      $("#dmsf_link_internal").toggle();
+      $("#dmsf_link_external").toggle();
+      $("#dmsf_link_external_url").toggleClass('required', $(this).val());
+      var labelUrl = $('label[for="dmsf_link_external_url"]');
+      labelUrl.toggleClass('required', $(this).val());
+      if(labelUrl.find(".required").length == 0){
+        labelUrl.append('<span class="required"> *</span>');
+      }
+    });
   });
 <% end %>
