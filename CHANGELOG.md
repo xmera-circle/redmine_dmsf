@@ -1,8 +1,13 @@
 Changelog for Redmine DMSF
 ==========================
 
-3.1.3 *????-??-??*
-------------------
+3.1.3-xmr *2023-09-07*
+----------------------
+
+Intermediate release of xmera
+
+* New #1474 - Removes main menu from workflows controller
+* New #1248 - Make DMS document available as Type of a custom field
 
 3.1.2 *2023-08-23*
 ------------------
