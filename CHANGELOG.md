@@ -1,6 +1,13 @@
 Changelog for Redmine DMSF
 ==========================
 
+3.1.3-xmr-1 *2024-01-04*
+------------------------
+
+Intermediate release of xmera
+
+* Bug #1505 - Adds an extra check in DmsfQuery#dmsf_node
+
 3.1.3 *2023-11-15*
 ------------------
 
