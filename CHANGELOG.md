@@ -1,8 +1,16 @@
 Changelog for Redmine DMSF
 ==========================
 
-3.1.4 *???-??-??*
-------------------
+3.1.4-xmr *2024-03-25*
+----------------------
+
+    Intermediate version of xmera
+    Security Issues
+
+* Bug: Missing safe_attribute for dmsf custom field support
+* Security: Information disclosure of database request details
+* New: Validate DmsfFile and DmsfFileRevision
+* Security: Medium Security Vulnerability: Unvalidated file extension change
 
 3.1.3 *2023-11-15*
 ------------------
