@@ -1,6 +1,14 @@
 Changelog for Redmine DMSF
 ==========================
 
+3.1.4-xmr-1 *2024-05-03*
+------------------------
+
+    Intermediate version of xmera
+    File indexing improvement
+
+* New: Adds -d option to set index database via CLI
+
 3.1.4-xmr *2024-03-25*
 ----------------------
 
