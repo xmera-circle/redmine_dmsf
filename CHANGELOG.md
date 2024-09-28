@@ -1,6 +1,15 @@
 Changelog for Redmine DMSF
 ==========================
 
+3.2.1-xmr *2024-09-28*
+----------------------
+
+    DMSF digest fix
+
+* Bug: Some controller hooks won't be loaded
+* Bug: token actionname for WebDAV digest still uses kebab case
+* New: Adds further text to reset button of webdav digest
+
 3.2.1 *2024-09-02*
 ------------------
 
