@@ -18,6 +18,224 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+# Main module
+module RedmineDmsf
+  # Settings
+  class << self
+    def dmsf_max_file_download
+      Setting.plugin_redmine_dmsf['dmsf_max_file_download'].to_i
+    end
+
+    def dmsf_max_email_filesize
+      Setting.plugin_redmine_dmsf['dmsf_max_email_filesize'].to_i
+    end
+
+    def dmsf_storage_directory
+      if Setting.plugin_redmine_dmsf['dmsf_storage_directory'].present?
+        Setting.plugin_redmine_dmsf['dmsf_storage_directory'].strip
+      else
+        'files/dmsf'
+      end
+    end
+
+    def dmsf_index_database
+      if Setting.plugin_redmine_dmsf['dmsf_index_database'].present?
+        Setting.plugin_redmine_dmsf['dmsf_index_database'].strip
+      else
+        File.expand_path('dmsf_index', Rails.root)
+      end
+    end
+
+    def dmsf_stemming_lang
+      if Setting.plugin_redmine_dmsf['dmsf_stemming_lang'].present?
+        Setting.plugin_redmine_dmsf['dmsf_stemming_lang'].strip
+      else
+        'english'
+      end
+    end
+
+    def dmsf_stemming_strategy
+      if Setting.plugin_redmine_dmsf['dmsf_stemming_strategy'].present?
+        Setting.plugin_redmine_dmsf['dmsf_stemming_strategy'].strip
+      else
+        'STEM_NONE'
+      end
+    end
+
+    def dmsf_webdav?
+      if Setting.plugin_redmine_dmsf['dmsf_webdav'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_webdav']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_webdav'].to_i.positive?
+      end
+    end
+
+    def dmsf_display_notified_recipients?
+      if Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_display_notified_recipients'].to_i.positive?
+      end
+    end
+
+    def dmsf_global_title_format
+      if Setting.plugin_redmine_dmsf['dmsf_global_title_format'].present?
+        Setting.plugin_redmine_dmsf['dmsf_global_title_format'].strip
+      else
+        ''
+      end
+    end
+
+    def dmsf_columns
+      Setting.plugin_redmine_dmsf['dmsf_columns'].presence || DmsfFolder::DEFAULT_COLUMNS
+    end
+
+    def dmsf_webdav_ignore
+      if Setting.plugin_redmine_dmsf['dmsf_webdav_ignore'].present?
+        Setting.plugin_redmine_dmsf['dmsf_webdav_ignore'].strip
+      else
+        '^(\._|\.DS_Store$|Thumbs.db$)'
+      end
+    end
+
+    def dmsf_webdav_disable_versioning
+      if Setting.plugin_redmine_dmsf['dmsf_webdav_disable_versioning'].present?
+        Setting.plugin_redmine_dmsf['dmsf_webdav_disable_versioning'].strip
+      else
+        '^\~\$|\.tmp$'
+      end
+    end
+
+    def dmsf_keep_documents_locked?
+      if Setting.plugin_redmine_dmsf['dmsf_keep_documents_locked'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_keep_documents_locked']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_keep_documents_locked'].to_i.positive?
+      end
+    end
+
+    def dmsf_act_as_attachable?
+      if Setting.plugin_redmine_dmsf['dmsf_act_as_attachable?'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_act_as_attachable?']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_act_as_attachable?'].to_i.positive?
+      end
+    end
+
+    def dmsf_documents_email_from
+      if Setting.plugin_redmine_dmsf['dmsf_documents_email_from'].present?
+        Setting.plugin_redmine_dmsf['dmsf_documents_email_from'].strip
+      else
+        "#{User.current.name} <#{User.current.mail}>"
+      end
+    end
+
+    def dmsf_documents_email_reply_to
+      if Setting.plugin_redmine_dmsf['dmsf_documents_email_reply_to'].present?
+        Setting.plugin_redmine_dmsf['dmsf_documents_email_reply_to'].strip
+      else
+        ''
+      end
+    end
+
+    def dmsf_documents_email_links_only?
+      if Setting.plugin_redmine_dmsf['dmsf_documents_email_links_only'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_documents_email_links_only']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_documents_email_links_only'].to_i.positive?
+      end
+    end
+
+    def dmsf_enable_cjk_ngrams?
+      if Setting.plugin_redmine_dmsf['dmsf_enable_cjk_ngrams'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_enable_cjk_ngrams']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_enable_cjk_ngrams'].to_i.positive?
+      end
+    end
+
+    def dmsf_webdav_use_project_names?
+      if Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'].to_i.positive?
+      end
+    end
+
+    def dmsf_webdav_ignore_1b_file_for_authentication?
+      if Setting.plugin_redmine_dmsf['dmsf_webdav_ignore_1b_file_for_authentication'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_webdav_ignore_1b_file_for_authentication']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_webdav_ignore_1b_file_for_authentication'].to_i.positive?
+      end
+    end
+
+    def dmsf_projects_as_subfolders?
+      if Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_projects_as_subfolders'].to_i.positive?
+      end
+    end
+
+    def only_approval_zero_minor_version?
+      if Setting.plugin_redmine_dmsf['only_approval_zero_minor_version'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['only_approval_zero_minor_version']
+      else
+        Setting.plugin_redmine_dmsf['only_approval_zero_minor_version'].to_i.positive?
+      end
+    end
+
+    def dmsf_max_notification_receivers_info
+      Setting.plugin_redmine_dmsf['dmsf_max_notification_receivers_info'].to_i
+    end
+
+    def office_bin
+      if Setting.plugin_redmine_dmsf['office_bin'].present?
+        Setting.plugin_redmine_dmsf['office_bin'].strip
+      else
+        ''
+      end
+    end
+
+    def dmsf_global_menu_disabled?
+      if Setting.plugin_redmine_dmsf['dmsf_global_menu_disabled'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['dmsf_global_menu_disabled']
+      else
+        Setting.plugin_redmine_dmsf['dmsf_global_menu_disabled'].to_i.positive?
+      end
+    end
+
+    def dmsf_default_query
+      Setting.plugin_redmine_dmsf['dmsf_default_query'].to_i
+    end
+
+    def empty_minor_version_by_default?
+      if Setting.plugin_redmine_dmsf['empty_minor_version_by_default'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['empty_minor_version_by_default']
+      else
+        Setting.plugin_redmine_dmsf['empty_minor_version_by_default'].to_i.positive?
+      end
+    end
+
+    def remove_original_documents_module?
+      if Setting.plugin_redmine_dmsf['remove_original_documents_module'].is_a?(TrueClass)
+        Setting.plugin_redmine_dmsf['remove_original_documents_module']
+      else
+        Setting.plugin_redmine_dmsf['remove_original_documents_module'].to_i.positive?
+      end
+    end
+
+    def dmsf_webdav_authentication
+      if Setting.plugin_redmine_dmsf['dmsf_webdav_authentication'].present?
+        Setting.plugin_redmine_dmsf['dmsf_webdav_authentication'].strip
+      else
+        'Basic'
+      end
+    end
+  end
+end
+
 # DMSF libraries
 
 # Validators
