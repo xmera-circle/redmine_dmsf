@@ -530,7 +530,7 @@ class DmsfController < ApplicationController
     end
 
     @email_params = {
-      zipped_content: tmp_entry_identifier(zipped_content),
+      zipped_content: helpers.tmp_entry_identifier(zipped_content),
       folders: selected_folders,
       files: selected_files,
       subject: "#{@project.name} #{l(:label_dmsf_file_plural).downcase}",
