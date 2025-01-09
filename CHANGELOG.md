@@ -1,6 +1,16 @@
 Changelog for Redmine DMSF
 ==========================
 
+3.2.5 *2025-01-07*
+------------------
+
+    Intermediate version of xmera Solutions
+
+* Bug: ActiveRecord::NotNullViolation with DMS project preferences
+* Bug: Plugin settings of data type boolean do not work properly
+* Bug: Fix approval workflow email notifications for more than first approval step
+* Security: Fix possible unwanted file access
+
 3.2.4 *2024-10-24*
 ------------------
 
