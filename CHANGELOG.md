@@ -1,8 +1,16 @@
 Changelog for Redmine DMSF
 ==========================
 
-4.1.4 *????-??-??*
-------------------
+4.1.3+xmr.1 *2025-08-22*
+----------------------
+
+* New: #1597 - Change GNU GPL v2 -> v3
+* Bug: #1599 - Error 500 with empty trash
+* Bug: Improves tabler icon integration 
+* Bug: Fixes uninitalized constant RedmineDmsf::DmsfZip error
+* Bug: #1601 - Fixes serialization of attached documents
+* Bug: DOM manipulation w.r.t. attachments
+
 
 4.1.3 *2025-05-09*
 ------------------
