@@ -1,6 +1,14 @@
 Changelog for Redmine DMSF
 ==========================
 
+4.2.2+xmr.1 2026-02-14
+----------------------
+
+    Fixes custom field format file revision
+
+* Bug: undefined method `icon_for_mime_type'
+* Bug: incorrect structure in API response of dmsf.json?folder_id=XX
+
 4.2.2 *2025-07-22*
 ------------------
 
@@ -152,7 +160,6 @@ NOTE: These issues are still from the original danmunn's repository
     Maintenance release
 
 * Bug: #1534 - Formating is not applied to Comment column
-
 
 3.1.8 *2024-07-04*
 ------------------
@@ -592,7 +599,6 @@ IMPORTANT: REST API for copying/moving has changed. Check *extra/api/api_client.
     Implementation of folders movement between projects (WebDAV)
     Korean localization updated
 
-
 * New: #1129 - New UI: Optimize Actions Menu
 * New: #1128 - New German translations
 * New: #1127 - Help integrating new feature - Auto-update word files with dmsf revision
@@ -937,7 +943,6 @@ IMPORTANT
 * Bug: #501 - If a folder or file is locked, we can't activate or deactivate notifications
 * New: #500 - Automatically check the inline radiobutton when use custom version
 * New: #252 - nautilus-like folders-files list view
-
 
 1.5.6 *2016-01-25*
 ------------------
