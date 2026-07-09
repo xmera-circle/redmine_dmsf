@@ -19,7 +19,7 @@
 
 # Public URL controller
 class DmsfPublicUrlsController < ApplicationController
-  model_object DmsfPublicUrl
+  self.model_object = DmsfPublicUrl
   before_action :authorize, only: [:create]
   skip_before_action :check_if_login_required, only: [:show]
 
