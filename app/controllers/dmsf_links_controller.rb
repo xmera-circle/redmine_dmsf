@@ -21,7 +21,7 @@
 class DmsfLinksController < ApplicationController
   self.model_object = DmsfLink
 
-  before_action :find_self.model_object =, only: %i[destroy restore]
+  before_action :find_model_object, only: %i[destroy restore]
   before_action :find_link_project
   before_action :find_folder, only: [:destroy]
   before_action :authorize

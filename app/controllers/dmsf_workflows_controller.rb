@@ -23,7 +23,7 @@ class DmsfWorkflowsController < ApplicationController
   menu_item :dmsf_approvalworkflows
   self.main_menu = false
 
-  before_action :find_self.model_object =, except: %i[create new index assign assignment]
+  before_action :find_model_object, except: %i[create new index assign assignment]
   before_action :find_project
   before_action :authorize_custom
   before_action :permissions?, only: %i[new_action assignment start]
