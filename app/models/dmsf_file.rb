@@ -125,7 +125,7 @@ class DmsfFile < ApplicationRecord
   # Rails/SkipsModelValidations: Avoid using touch because it skips validations. =>
   # rubocop:disable Rails/SkipsModelValidations
   def update_parent
-    dmsf_folder&.touch
+    dmsf_folder&.touch time: updated_at
   end
   # rubocop:enable Rails/SkipsModelValidations
 
