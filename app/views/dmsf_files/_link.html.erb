@@ -69,29 +69,39 @@
     <% end %>
     <% if !dmsf_file.locked? %>
       <% # Notifications %>
-      <% if dmsf_file.notification %>
-        <%= link_to sprite_icon('email', ''), notify_deactivate_dmsf_files_path(id: dmsf_file,
-                                                                                back_url: issue_path(@issue)),
-                    title: l(:title_notifications_active_deactivate), class: 'icon-only icon-email' %>
-      <% else %>
-        <%= link_to sprite_icon('email-disabled', ''), notify_activate_dmsf_files_path(id: dmsf_file,
-                                                                                       back_url: issue_path(@issue)),
-                    title: l(:title_notifications_not_active_activate), class: 'icon-only icon-email-add' %>
+      <% if Setting.notified_events.include?('dmsf_legacy_notifications') %>
+        <% if dmsf_file.notification %>
+          <%= link_to sprite_icon('email', ''), notify_deactivate_dmsf_files_path(id: dmsf_file,
+                                                                                  back_url: issue_path(@issue)),
+                      title: l(:title_notifications_active_deactivate), class: 'icon-only icon-email' %>
+        <% else %>
+          <%= link_to sprite_icon('email-disabled', ''), notify_activate_dmsf_files_path(id: dmsf_file,
+                                                                                         back_url: issue_path(@issue)),
+                      title: l(:title_notifications_not_active_activate), class: 'icon-only icon-email-add' %>
+        <% end %>
       <% end %>
     <% else %>
       <span class="icon-only"></span>
       <span class="icon-only"></span>
     <% end %>
+    <% # Watch %>
+    <% watched = dmsf_file.watched_by?(User.current) %>
+    <% css = [watcher_css([dmsf_file]), watched ? 'icon icon-fav' : 'icon icon-fav-off'].join(' ') %>
+    <% icon = watched ? 'unwatch' : 'watch' %>
+    <% text = watched ? l(:button_unwatch) : l(:button_watch) %>
+    <% url = watch_path(object_type: dmsf_file.class.to_s.underscore, object_id: dmsf_file.id) %>
+    <% method = watched ? 'delete' : 'post' %>
+    <%= link_to sprite_icon(icon, ''), url, method: method, class: css, disabled: !User.current.logged?, title: text %>
     <% # Delete %>
     <% if @issue.attributes_editable? &&
        ((link && User.current.allowed_to?(:file_manipulation, dmsf_file.project)) ||
          (!link && User.current.allowed_to?(:file_delete, dmsf_file.project))) %>
       <% url = if link
-                 dmsf_link_path(link, commit: 'yes', back_url: issue_path(@issue))
+                 dmsf_link_path link, commit: 'yes', back_url: issue_path(@issue)
                else
-                 dmsf_file_path(id: dmsf_file, commit: 'yes', back_url: issue_path(@issue))
+                 dmsf_file_path id: dmsf_file, commit: 'yes', back_url: issue_path(@issue)
                end %>
-      <%= delete_link url, {}, '' %>
+      <%= delete_link url, { title: l(:button_delete) }, '' %>
     <% end %>
     <% # Approval workflow %>
     <% wf = DmsfWorkflow.find_by(id: dmsf_file.last_revision.dmsf_workflow_id) if dmsf_file.last_revision.dmsf_workflow_id %>
