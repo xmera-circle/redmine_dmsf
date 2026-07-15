@@ -264,6 +264,7 @@ class DmsfLinksTest < RedmineDmsf::Test::UnitTest
   def test_update_parent
     @file_link2.name = 'New name'
     assert @file_link2.save
-    assert_equal @file_link2.dmsf_folder.reload.updated_at, @file_link2.updated_at
+    # to_i - exclude milliseconds (Postgres and SQLite)
+    assert_equal @file_link2.dmsf_folder.reload.updated_at.to_i, @file_link2.updated_at.to_i
   end
 end

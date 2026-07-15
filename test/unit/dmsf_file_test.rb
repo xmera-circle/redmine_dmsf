@@ -344,6 +344,7 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
   def test_update_parent
     @file4.notification = true
     assert @file4.save
-    assert_equal @file4.dmsf_folder.reload.updated_at, @file4.updated_at
+    # to_i - exclude milliseconds (Postgres and SQLite)
+    assert_equal @file4.dmsf_folder.reload.updated_at.to_i, @file4.updated_at.to_i
   end
 end

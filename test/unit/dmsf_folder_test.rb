@@ -366,6 +366,7 @@ class DmsfFolderTest < RedmineDmsf::Test::UnitTest
   def test_update_parent
     @folder2.title = 'New title'
     assert @folder2.save
-    assert_equal @folder2.dmsf_folder.reload.updated_at, @folder2.updated_at
+    # to_i - exclude milliseconds (Postgres and SQLite)
+    assert_equal @folder2.dmsf_folder.reload.updated_at.to_i, @folder2.updated_at.to_i
   end
 end
