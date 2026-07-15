@@ -260,4 +260,10 @@ class DmsfLinksTest < RedmineDmsf::Test::UnitTest
       DmsfLink.prune 11.days.ago
     end
   end
+
+  def test_update_parent
+    @file_link2.name = 'New name'
+    assert @file_link2.save
+    assert_equal @file_link2.dmsf_folder.reload.updated_at, @file_link2.updated_at
+  end
 end

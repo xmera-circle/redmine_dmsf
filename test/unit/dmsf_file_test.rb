@@ -340,4 +340,10 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
       DmsfFile.prune 11.days.ago
     end
   end
+
+  def test_update_parent
+    @file4.notification = true
+    assert @file4.save
+    assert_equal @file4.dmsf_folder.reload.updated_at, @file4.updated_at
+  end
 end

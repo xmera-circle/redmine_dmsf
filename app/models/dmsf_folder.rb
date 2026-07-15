@@ -98,6 +98,7 @@ class DmsfFolder < ApplicationRecord
   validates :dmsf_folder, dmsf_folder_parent: true, if: proc { |folder| !folder.new_record? }
 
   before_create :default_values
+  after_save :update_parent
 
   def visible?(_user = User.current)
     return DmsfFolder.visible.exists?(id: id) if respond_to?(:type) && /^folder/.match?(type)
@@ -143,6 +144,14 @@ class DmsfFolder < ApplicationRecord
   def default_values
     self.notification = true if RedmineDmsf.dmsf_default_notifications? && !self.system
   end
+
+  # Update the parent folder's timestamp (updated_at)
+  # Rails/SkipsModelValidations: Avoid using touch because it skips validations. =>
+  # rubocop:disable Rails/SkipsModelValidations
+  def update_parent
+    dmsf_folder&.touch
+  end
+  # rubocop:enable Rails/SkipsModelValidations
 
   def locked_by
     if lock && lock.reverse[0]

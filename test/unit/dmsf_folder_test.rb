@@ -362,4 +362,10 @@ class DmsfFolderTest < RedmineDmsf::Test::UnitTest
       DmsfFolder.prune 11.days.ago
     end
   end
+
+  def test_update_parent
+    @folder2.title = 'New title'
+    assert @folder2.save
+    assert_equal @folder2.dmsf_folder.reload.updated_at, @folder2.updated_at
+  end
 end

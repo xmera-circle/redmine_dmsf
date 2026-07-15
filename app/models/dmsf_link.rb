@@ -42,6 +42,15 @@ class DmsfLink < ApplicationRecord
 
   before_destroy :delete_system_folder_before
   after_destroy :delete_system_folder_after
+  after_save :update_parent
+
+  # Update the parent folder's timestamp (updated_at)
+  # Rails/SkipsModelValidations: Avoid using touch because it skips validations. =>
+  # rubocop:disable Rails/SkipsModelValidations
+  def update_parent
+    dmsf_folder&.touch
+  end
+  # rubocop:enable Rails/SkipsModelValidations
 
   def target_folder_id
     if target_type == DmsfFolder.model_name.to_s
