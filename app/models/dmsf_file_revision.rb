@@ -83,10 +83,11 @@ class DmsfFileRevision < ApplicationRecord
     author_key: "#{DmsfFileRevision.table_name}.user_id",
     permission: :view_dmsf_file_revisions,
     scope: proc {
-      DmsfFileRevision
-        .joins(:dmsf_file)
-        .joins("JOIN #{Project.table_name} ON #{Project.table_name}.id = #{DmsfFile.table_name}.project_id")
-        .visible
+      DmsfFileRevision.joins(:dmsf_file)
+                      .joins(
+                        "JOIN #{Project.table_name} ON #{Project.table_name}.id = #{DmsfFile.table_name}.project_id"
+                      )
+                      .visible
     }
   )
 

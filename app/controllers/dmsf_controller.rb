@@ -41,12 +41,13 @@ class DmsfController < ApplicationController
 
   accept_api_auth :show, :create, :save, :delete, :entries_operation
 
+  include QueriesHelper
+  include DmsfQueriesHelper
+
   helper :custom_fields
   helper :dmsf_folder_permissions
   helper :queries
-  include QueriesHelper
   helper :dmsf_queries
-  include DmsfQueriesHelper
   helper :context_menus
   helper :watchers
 
@@ -112,7 +113,7 @@ class DmsfController < ApplicationController
           @dmsf_pages = Paginator.new @dmsf_count, per_page_option, params['page']
           render layout: !request.xhr?
         end
-        format.any(:atom, :csv, :pdf) { head :unprocessable_entity }
+        format.any(:atom, :csv, :pdf) { head :unprocessable_content }
         format.api { render_validation_errors(@query) }
       end
     end
@@ -187,7 +188,7 @@ class DmsfController < ApplicationController
         redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
       elsif params[:delete_entries].present?
         delete_entries @selected_folders, @selected_files, @selected_links, false
-        redirect_back_or_default dmsf_folder_path id: @project, folder_id: @folder
+        redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
       elsif params[:destroy_entries].present?
         delete_entries @selected_folders, @selected_files, @selected_links, true
         redirect_back_or_default dmsf_folder_path(id: @project, folder_id: @folder)
@@ -454,7 +455,7 @@ class DmsfController < ApplicationController
           if object
             flash.now[:error] = object.errors.full_messages.to_sentence
           else
-            head :unprocessable_entity
+            head :unprocessable_content
           end
         end
       end

@@ -289,9 +289,7 @@ module Dav4rack
       return unless @lock_class
 
       if @lock_class.explicitly_locked?(@path)
-        if @lock_class.explicit_locks(@path).count { |l| l.scope == 'exclusive' && l.user != @user }.positive?
-          raise Locked
-        end
+        raise Locked if @lock_class.explicit_locks(@path).any? { |l| l.scope == 'exclusive' && l.user != @user }
       elsif @lock_class.implicitly_locked?(@path)
         if lock_scope.to_s == 'exclusive'
           locks = @lock_class.implicit_locks(@path)

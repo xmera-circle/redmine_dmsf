@@ -302,8 +302,8 @@ class DmsfFolder < ApplicationRecord
     new_folder.user = User.current
     new_folder.custom_values = []
     new_folder.custom_field_values =
-      custom_field_values.each_with_object({}) do |v, h|
-        h[v.custom_field_id] = v.value
+      custom_field_values.to_h do |cv|
+        [cv.custom_field_id, cv.value]
       end
     unless new_folder.save
       Rails.logger.error new_folder.errors.full_messages.to_sentence
@@ -515,7 +515,7 @@ class DmsfFolder < ApplicationRecord
     title.scrub.gsub(ALL_INVALID_CHARACTERS, '.').gsub(/\.{2,}/, '.').chomp('.')
   end
 
-  def permission_for_role(role)
+  def permission_for_role?(role)
     dmsf_folder_permissions.roles.exists? object_id: role.id
   end
 

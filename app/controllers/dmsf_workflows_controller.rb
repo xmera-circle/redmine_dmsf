@@ -19,7 +19,7 @@
 
 # WorkflowsController
 class DmsfWorkflowsController < ApplicationController
-  model_object DmsfWorkflow
+  self.model_object = DmsfWorkflow
   menu_item :dmsf_approvalworkflows
   self.main_menu = false
 

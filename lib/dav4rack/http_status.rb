@@ -74,7 +74,7 @@ module Dav4rack
         klass = Class.new(Status)
         klass.code = code
         klass.reason_phrase = reason_phrase
-        klass_name = reason_phrase.gsub(/[ \-]/, '')
+        klass_name = reason_phrase.gsub(/[ -]/, '')
         const_set klass_name, klass
         hsh[code] = klass
       end

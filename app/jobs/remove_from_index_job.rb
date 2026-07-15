@@ -29,12 +29,12 @@ class RemoveFromIndexJob < ApplicationJob
     db_path = File.join RedmineDmsf.dmsf_index_database, stem_lang
     db = Xapian::WritableDatabase.new(db_path, Xapian::DB_OPEN)
     found = false
-    db.postlist('').each do |it|
-      doc = db.document(it.docid)
+    db.postlist('').each do |item|
+      doc = db.document(item.docid)
       dochash = Hash[*doc.data.scan(%r{(url|sample|modtime|author|type|size)=/?([^\n\]]+)}).flatten]
       next unless url == dochash['url']
 
-      db.delete_document it.docid
+      db.delete_document item.docid
       found = true
       break
     end

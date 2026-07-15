@@ -61,8 +61,12 @@ module RedmineDmsf
 
         return if @files.include?(string_path)
 
-        zip_entry = ::Zip::Entry.new(@zip_file, string_path, nil, nil, nil, nil, nil, nil,
-                                     ::Zip::DOSTime.at(dmsf_file.last_revision.updated_at))
+        zip_entry = ::Zip::Entry.new(
+          @zip_file,
+          string_path,
+          time: ::Zip::DOSTime.at(dmsf_file.last_revision.updated_at)
+        )
+
         @zip_file.put_next_entry zip_entry
         dmsf_file.last_revision.file.open do |f|
           while (buffer = f.read(8192))
@@ -76,8 +80,11 @@ module RedmineDmsf
       def add_dmsf_folder(dmsf_folder, member, root_path = nil)
         string_path = dmsf_folder.dmsf_path_str + File::SEPARATOR
         string_path = string_path[(root_path.length + 1)..string_path.length] if root_path
-        zip_entry = ::Zip::Entry.new(@zip_file, string_path, nil, nil, nil, nil, nil, nil,
-                                     ::Zip::DOSTime.at(dmsf_folder.modified))
+        zip_entry = ::Zip::Entry.new(
+          @zip_file,
+          string_path,
+          time: ::Zip::DOSTime.at(dmsf_folder.modified)
+        )
         return if @folders.include?(string_path)
 
         @zip_file.put_next_entry zip_entry

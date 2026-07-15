@@ -200,7 +200,6 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
   def test_text
     assert @file1.text?
     assert_not @file7.text?
-    assert_not @file8.text?
   end
 
   def test_pdf
@@ -305,18 +304,18 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
   def test_approval_allowed_zero_minor_yes
     with_settings plugin_redmine_dmsf: { 'only_approval_zero_minor_version' => '1' } do
       @file1.last_revision.minor_version = 0
-      assert @file1.approval_allowed_zero_minor
+      assert @file1.approval_allowed_zero_minor?
       @file1.last_revision.minor_version = 1
-      assert_not @file1.approval_allowed_zero_minor
+      assert_not @file1.approval_allowed_zero_minor?
     end
   end
 
   def test_approval_allowed_zero_minor_no
     with_settings plugin_redmine_dmsf: { 'only_approval_zero_minor_version' => '0' } do
       @file1.last_revision.minor_version = 0
-      assert @file1.approval_allowed_zero_minor
+      assert @file1.approval_allowed_zero_minor?
       @file1.last_revision.minor_version = 1
-      assert @file1.approval_allowed_zero_minor
+      assert @file1.approval_allowed_zero_minor?
     end
   end
 

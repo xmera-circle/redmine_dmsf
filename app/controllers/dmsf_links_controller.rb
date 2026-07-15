@@ -19,7 +19,7 @@
 
 # Links controller
 class DmsfLinksController < ApplicationController
-  model_object DmsfLink
+  self.model_object = DmsfLink
 
   before_action :find_model_object, only: %i[destroy restore]
   before_action :find_link_project

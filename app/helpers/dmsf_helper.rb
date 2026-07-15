@@ -35,9 +35,9 @@ module DmsfHelper
     # Get only the filename, not the whole path
     just_filename = File.basename(filename.gsub('\\\\', '/'))
     # Replace all non-alphanumeric, hyphens or periods with underscore
-    just_filename.gsub!(/[^\w.\-]/, '_')
+    just_filename.gsub!(/[^\w.-]/, '_')
     # Keep the extension if any
-    if !/^[a-zA-Z0-9_.\-]*$/.match?(just_filename) && just_filename =~ /(.[a-zA-Z0-9]+)$/
+    if !/^[a-zA-Z0-9_.-]*$/.match?(just_filename) && just_filename =~ /(.[a-zA-Z0-9]+)$/
       extension = Regexp.last_match(1)
       just_filename = Digest::SHA256.hexdigest(just_filename) << extension
     end

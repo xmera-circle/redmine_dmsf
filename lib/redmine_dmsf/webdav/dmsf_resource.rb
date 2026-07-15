@@ -675,7 +675,8 @@ module RedmineDmsf
                 lock_entity = lock.dmsf_folder || lock.dmsf_file
                 lock_path = "#{request.scheme}://#{request.host}:#{request.port}#{path_prefix}"
                 lock_path << "#{Addressable::URI.escape(lock_entity.project.identifier)}/"
-                pth = lock_entity.dmsf_path.map { |e| Addressable::URI.escape(e.respond_to?(:name) ? e.name : e.title) }
+                pth = lock_entity.dmsf_path
+                                 .map { |e| Addressable::URI.escape(e.respond_to?(:name) ? e.name : e.title) }
                                  .join('/')
                 lock_path << pth
                 lock_path << '/' if lock_entity.is_a?(DmsfFolder) && lock_path[-1, 1] != '/'

@@ -122,7 +122,7 @@ module RedmineDmsf
       end
 
       # Now we need to determine lock type and do the needful
-      if (existing.count == 1) && (existing[0].lock_scope == :exclusive)
+      if existing.one? && (existing[0].lock_scope == :exclusive)
         existing[0].destroy
         destroyed = true
       else

@@ -72,9 +72,9 @@ class DmsfWebdavLockTest < RedmineDmsf::Test::IntegrationTest
       assert_match %r{<d:depth>infinity</d:depth>}, response.body
       # 1.week = 7*24*3600=604800 seconds
       assert_match %r{<d:timeout>Second-604800</d:timeout>}, response.body
-      assert_match %r{<d:locktoken><d:href>([a-z0-9\-]+)</d:href></d:locktoken>}, response.body
+      assert_match %r{<d:locktoken><d:href>([a-z0-9-]+)</d:href></d:locktoken>}, response.body
       # Extract the locktoken, needed when refreshing the lock
-      response.body =~ %r{<d:locktoken><d:href>([a-z0-9\-]+)</d:href></d:locktoken>}
+      response.body =~ %r{<d:locktoken><d:href>([a-z0-9-]+)</d:href></d:locktoken>}
       lock_token = Regexp.last_match(1)
       # Verify the lock in the db
       @file9.reload

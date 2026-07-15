@@ -154,7 +154,7 @@ class DmsfFile < ApplicationRecord
     nil
   end
 
-  def approval_allowed_zero_minor
+  def approval_allowed_zero_minor?
     RedmineDmsf.only_approval_zero_minor_version? ? last_revision.minor_version&.zero? : true
   end
 

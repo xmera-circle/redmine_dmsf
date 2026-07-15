@@ -184,9 +184,7 @@ class DmsfFilesController < ApplicationController
             if RedmineDmsf.dmsf_display_notified_recipients? && recipients.any?
               max_notifications = RedmineDmsf.dmsf_max_notification_receivers_info
               to = recipients.collect { |user, _| user.name }.first(max_notifications).join(', ')
-              if to.present?
-                to << (recipients.count > max_notifications ? ',...' : '.')
-              end
+              to.presence&.<<((recipients.count > max_notifications ? ',...' : '.'))
             end
           rescue StandardError => e
             Rails.logger.error "Could not send email notifications: #{e.message}"

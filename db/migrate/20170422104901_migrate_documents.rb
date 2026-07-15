@@ -128,7 +128,7 @@ class MigrateDocuments < ActiveRecord::Migration[4.2]
   def storage_base_path(dmsf_file_revision)
     return nil unless dmsf_file_revision&.dmsf_file&.project
 
-    project_base = dmsf_file_revision.dmsf_file.project.identifier.gsub(/[^\w.\-]/, '_')
+    project_base = dmsf_file_revision.dmsf_file.project.identifier.gsub(/[^\w.-]/, '_')
     "#{DmsfFile.storage_path}/p_#{project_base}"
   end
 

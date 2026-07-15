@@ -62,13 +62,15 @@ class DmsfLink < ApplicationRecord
   end
 
   def target_file
-    @target_file = DmsfFile.find_by(id: target_file_id) if @target_file.nil? && target_file_id
-    @target_file
+    return @target_file if defined?(@target_file)
+
+    @target_file = DmsfFile.find_by(id: target_file_id)
   end
 
   def target_project
-    @target_project ||= Project.find_by(id: target_project_id)
-    @target_project
+    return @target_project if defined?(@target_project)
+
+    @target_project = Project.find_by(id: target_project_id)
   end
 
   def title
@@ -87,7 +89,8 @@ class DmsfLink < ApplicationRecord
 
   def path
     path = if target_type == DmsfFile.model_name.to_s && target_file
-             target_file.dmsf_path.map { |element| element.is_a?(DmsfFile) ? element.display_name : element.title }
+             target_file.dmsf_path
+                        .map { |element| element.is_a?(DmsfFile) ? element.display_name : element.title }
                         .join('/')
            else
              target_folder ? target_folder.dmsf_path_str : +''
