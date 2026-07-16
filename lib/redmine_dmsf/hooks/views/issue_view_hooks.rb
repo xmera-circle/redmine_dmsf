@@ -30,75 +30,8 @@ module RedmineDmsf
           attach_documents_form(context)
         end
 
-        def view_attachments_form_top(context = {})
-          html = +''
-          container = context[:container]
-          # Radio buttons
-          if allowed_to_attach_documents?(container)
-            html << '<p>'
-            classes = +'inline'
-            html << "<label class=\"#{classes}\">"
-            onchange = %($(".attachments-container:not(.dmsf-uploader)").show();
-                         $(".dmsf-uploader").parent().hide();
-                         return false;)
-            html << radio_button_tag('dmsf_attachments_upload_choice', 'Attachments',
-                                     User.current.pref.dmsf_attachments_upload_choice == 'Attachments',
-                                     onchange: onchange)
-            html << l(:label_basic_attachments)
-            html << '</label>'
-            classes << ' dmsf_attachments_label' unless container&.new_record?
-            html << "<label class=\"#{classes}\">"
-            onchange = %($(".attachments-container:not(.dmsf-uploader)").hide();
-                         $(".dmsf-uploader").parent().show();
-                         return false;)
-            html << radio_button_tag('dmsf_attachments_upload_choice', 'DMSF',
-                                     User.current.pref.dmsf_attachments_upload_choice == 'DMSF',
-                                     onchange: onchange)
-            html << l(:label_dmsf_attachments)
-            html << '</label>'
-            html << '</p>'
-            if User.current.pref.dmsf_attachments_upload_choice == 'DMSF'
-              html << context[:hook_caller].javascript_tag(
-                "$('.attachments-container:not(.dmsf-uploader)').hide();"
-              )
-            end
-          end
-          # Upload form
-          html << attach_documents_form(context, label: false) if allowed_to_attach_documents?(container)
-          html
-        end
-
         def view_issues_show_description_bottom(context = {})
           show_attached_documents context[:issue], context[:controller]
-        end
-
-        def view_issues_show_attachments_table_bottom(context = {})
-          show_attached_documents context[:container], context[:controller], context[:attachments]
-        end
-
-        def view_issues_dms_attachments(context = {})
-          'yes' if get_links(context[:container]).any?
-        end
-
-        def view_issues_show_thumbnails(context = {})
-          show_thumbnails(context[:container], context[:controller])
-        end
-
-        def view_issues_dms_thumbnails(context = {})
-          links = get_links(context[:container])
-          return unless links.present? && Setting.thumbnails_enabled?
-
-          images = links.pluck(0).select(&:image?)
-          'yes' if images.any?
-        end
-
-        def view_issues_edit_notes_bottom_style(context = {})
-          if User.current.pref.dmsf_attachments_upload_choice == 'Attachments' ||
-             !allowed_to_attach_documents?(context[:container])
-            ''
-          else
-            'display: none'
-          end
         end
 
         private
@@ -130,16 +63,6 @@ module RedmineDmsf
             links.sort_by! { |a| a[2] }
           end
           links
-        end
-
-        def show_thumbnails(container, controller)
-          links = get_links(container)
-          return if links.blank?
-
-          controller.send :render_to_string, { partial: 'dmsf_files/thumbnails',
-                                               locals: { links: links,
-                                                         thumbnails: Setting.thumbnails_enabled?,
-                                                         link_to: false } }
         end
 
         def attach_documents_form(context, label: true)
