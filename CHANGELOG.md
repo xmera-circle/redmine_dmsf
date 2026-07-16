@@ -1,8 +1,14 @@
 Changelog for Redmine DMSF
 ==========================
 
-5.0.6 *????-??-??*
+5.1.0 *2026-07-16*
 ------------------
+
+    Redmine 7.0 compatibility
+
+* New: #34 - Support for Redmine 7?
+* Bug: #33 - Notification and Upload Option for DMS Files in Ticket
+* Bug: #32 - last_change_date of directories/folders does not change if files get added or removed
 
 5.0.5 *2026-06-23*
 ------------------
