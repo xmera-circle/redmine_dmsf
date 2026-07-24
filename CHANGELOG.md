@@ -1,7 +1,7 @@
 Changelog for Redmine DMSF
 ==========================
 
-4.2.4+xmr.1 unreleased
+4.2.4+xmr.1 2026-07-24
 ----------------------
 
 * Bug: Fixes undefined method `icon_for_mime_type'
