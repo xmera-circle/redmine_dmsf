@@ -26,6 +26,7 @@ source 'https://rubygems.org' do
   gem 'simple_enum'
   gem 'uuidtools'
   gem 'zip-zip' unless Dir.exist?(File.expand_path('../../vault', __FILE__))
+  gem 'pstore'
   group :xapian do
     gem 'xapian-ruby'
   end
