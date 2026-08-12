@@ -437,7 +437,7 @@ class DmsfFileRevision < ApplicationRecord
   # Update the parent folder's timestamp (updated_at)
   # Rails/SkipsModelValidations: Avoid using touch because it skips validations. =>
   # rubocop:disable Rails/SkipsModelValidations
-  def update_parent_folder
+  def update_parent
     dmsf_file.dmsf_folder&.touch time: updated_at
   end
   # rubocop:enable Rails/SkipsModelValidations
