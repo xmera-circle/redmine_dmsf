@@ -50,19 +50,16 @@ class DmsfAttachFile
     @path = ENV.fetch('file', nil)
     raise StandardError, 'Enter a file path' unless @path
 
-    if File.basename(@path) =~ /^\d+_\d+_(.+)/
-      @filename = Regexp.last_match(1)
-    else
-      raise StandardError, 'Unexpected filename format'
-    end
+    raise(StandardError, 'Unexpected filename format') unless File.basename(@path) =~ /^\d+_\d+_(.+)/
 
+    @filename = Regexp.last_match(1)
     @dry_run = ENV.fetch('dry_run', nil)
   end
 
   def test
     puts @filename
     return if @dry_run
-    
+
     @revision.shared_file.attach(
       io: File.open(@path),
       filename: @filename
